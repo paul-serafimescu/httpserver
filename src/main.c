@@ -13,10 +13,10 @@ int main(int argc, char **argv) {
   int server_fd, new_socket, option_value = 1;
   long request;
   struct sockaddr_in request_address;
-  int addrlen = sizeof(request_address);
+  size_t addrlen = sizeof(request_address);
 
   /* should probably modularize the response stuff */
-  char *message = "HTTP/1.1 200 OK\nContent-Type: text/plain\nContent-Length: 12\n\nHello world!";
+  char *message = "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: 12\r\n\r\nHello world!";
 
   /*
    * AF_INET is what can communicate, in this case IPv4
@@ -30,7 +30,7 @@ int main(int argc, char **argv) {
   }
 
   if(setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &option_value, sizeof(option_value)) < 0) {
-    perror("setting socket\n");
+    perror("setting socket");
     return 1;
   }
 
@@ -46,7 +46,7 @@ int main(int argc, char **argv) {
 
   memset(request_address.sin_zero, '\0', sizeof(request_address.sin_zero));
 
-  if(bind(server_fd, (struct sockaddr*)&request_address, sizeof(request_address)) < 0) {
+  if(bind(server_fd, (struct sockaddr*)&request_address, addrlen) < 0) {
     perror("binding");
     return 1;
   }
@@ -67,8 +67,11 @@ int main(int argc, char **argv) {
 
     char buffer[30000] = {0};
     request = read(new_socket, buffer, 30000);
+    printf("%d\n", buffer[request]);
+    buffer[request] = 0;
+    printf("%s\n", buffer);
     write(new_socket, message, strlen(message));
-    printf("sent\n"); // for some reason this is printing twice per request
+    printf("sent\n");
     close(new_socket);
   }
 
