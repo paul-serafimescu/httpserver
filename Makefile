@@ -1,10 +1,16 @@
 SOURCE_PATH = $(CURDIR)/src
+SOURCE_FILES = $(wildcard $(SOURCE_PATH)/*.c)
+CFLAGS = -Wall -Wextra
 
-default: src/main.c
-	gcc $(SOURCE_PATH)/*.c -o server
+.PHONY: default run clean
 
-run:
+default: server
+
+server: $(SOURCE_FILES)
+	gcc $(CFLAGS) $^ -o $@
+
+run: server
 	./server
 
 clean:
-	rm server
+	$(RM) server
