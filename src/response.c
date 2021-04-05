@@ -13,7 +13,7 @@ http_response *create_response()
 
 int add_body(http_response *response, const http_request *request)
 {
-  char *body, *file_contents, *target = strcmp(request->url, "/") == 0 ? "/index.html" : request->url;
+  char *file_contents, *target = strcmp(request->url, "/") == 0 ? "/index.html" : request->url;
   long fsize;
   FILE *file = serve(target);
   fseek(file, 0, SEEK_END);
@@ -43,6 +43,8 @@ int send_response(int socket_fd, http_response *response)
   sprintf(buffer, HTTP_FORMAT, response->status_code, status_message, response->content_type, response->body_size, response->body);
   write(socket_fd, buffer, 30000);
   close(socket_fd);
+
+  return 0;
 }
 
 void destroy_response(http_response *response)
@@ -66,6 +68,6 @@ void print_response(http_response *response)
 FILE *serve(const char *file_name)
 {
   char buffer[100] = {0};
-  sprintf(buffer, "%s%s%s", "src/", STATIC_ROOT, file_name);
+  sprintf(buffer, "%s%s", STATIC_ROOT, file_name);
   return fopen(buffer, "rb");
 }
