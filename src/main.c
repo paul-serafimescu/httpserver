@@ -71,8 +71,9 @@ int main(int argc, char **argv) {
 
     if (parse_request(new_socket, request) == 0) {
       printf("request type: %d\nrequest url: %s\n", request->method, request->url);
-      create_response(new_socket, 200);
-      put_body(new_socket, "/", 200);
+      http_response *response = create_response();
+      add_body(response, request);
+      send_response(new_socket, response);
     }
   }
 

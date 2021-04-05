@@ -1,17 +1,29 @@
 #ifndef RESPONSE_H
 #define RESPONSE_H
 
-#define OK_HEADER "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\nContent-Length: 12\r\n\r\n"
-#define NF_HEADER "HTTP/1.1 404 Not Found\r\nContent-Type: text/html\r\nContent-Length: 18\r\n\r\n"
-#define BR_HEADER "HTTP/1.1 400 Bad Request\r\nContent-Type: text/html\r\nContent-Length: 20\r\n\r\n"
+#include "request.h"
 
-enum status {
-  OK = 200,
-  NOT_FOUND = 404,
-  BAD_REQUEST = 400
-};
+#define HTTP_FORMAT "HTTP/1.1 %d %s\r\nContent-Type: %s\r\nContent-Length: %ld\r\n\r\n%s"
+#define STATIC_ROOT "wwwroot"
 
-void create_response(int socket_fd, unsigned status);
-void put_body(int socket_fd, char *path, unsigned status_code);
+typedef struct {
+  enum {
+    OK = 200,
+    NOT_FOUND = 404,
+    BAD_REQUEST = 400
+  } status_code;
+  char *content_type;
+  char *body;
+  long body_size;
+} http_response;
+
+http_response *create_response();
+int add_body(http_response *response, const http_request *request);
+int send_response(int socket_fd, http_response *response);
+void destroy_response(http_response *response);
+
+/* helpers */
+void print_response(http_response *response);
+FILE *serve(const char *file_name);
 
 #endif
