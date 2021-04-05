@@ -6,17 +6,18 @@
 #include <string.h>
 #include <stdbool.h>
 
+#include "response.h"
+
 #define PORT 8000
 #define CONN_REQUESTS 10
 
 int main(int argc, char **argv) {
   int server_fd, new_socket, option_value = 1;
-  long request;
   struct sockaddr_in request_address;
   size_t addrlen = sizeof(request_address);
 
   /* should probably modularize the response stuff */
-  char *message = "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: 12\r\n\r\nHello world!";
+  // char *message = "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: 12\r\n\r\nHello world!";
 
   /*
    * AF_INET is what can communicate, in this case IPv4
@@ -65,14 +66,8 @@ int main(int argc, char **argv) {
       return 1;
     }
 
-    char buffer[30000] = {0};
-    request = read(new_socket, buffer, 30000);
-    printf("%d\n", buffer[request]);
-    buffer[request] = 0;
-    printf("%s\n", buffer);
-    write(new_socket, message, strlen(message));
-    printf("sent\n");
-    close(new_socket);
+    create_response(new_socket, 200);
+    put_body(new_socket, "/", 200);
   }
 
   return 0;
