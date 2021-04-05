@@ -18,10 +18,6 @@ void create_response(int socket_fd, unsigned status) {
 }
 
 void put_body(int socket_fd, char *path, unsigned status_code) {
-  char buffer[30000] = {0};
-  long request = read(socket_fd, buffer, 30000);
-  buffer[request] = 0;
-  printf("%s\n", buffer);
   char *message = status_code == OK ?
     "hello, world!" :
       status_code == BAD_REQUEST ?

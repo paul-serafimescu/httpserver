@@ -6,6 +6,7 @@
 #include <string.h>
 #include <stdbool.h>
 
+#include "request.h"
 #include "response.h"
 
 #define PORT 8000
@@ -59,6 +60,8 @@ int main(int argc, char **argv) {
 
   printf("ready\n");
 
+  http_request *request = create_request();
+
   while(true) {
 
     if((new_socket = accept(server_fd, (struct sockaddr*)&request_address, (socklen_t*)&addrlen)) < 0) {
@@ -66,9 +69,14 @@ int main(int argc, char **argv) {
       return 1;
     }
 
-    create_response(new_socket, 200);
-    put_body(new_socket, "/", 200);
+    if (parse_request(new_socket, request) == 0) {
+      printf("request type: %d\nrequest url: %s\n", request->method, request->url);
+      create_response(new_socket, 200);
+      put_body(new_socket, "/", 200);
+    }
   }
+
+  destroy_request(request); // yes i know this is unreachable
 
   return 0;
 }
