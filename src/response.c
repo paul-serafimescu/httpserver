@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
+
 #include "response.h"
 
 http_response *create_response()
@@ -16,6 +17,14 @@ int add_body(http_response *response, const http_request *request)
   char *file_contents, *target = strcmp(request->url, "/") == 0 ? "/index.html" : request->url;
   long fsize;
   FILE *file = serve(target);
+  if (file == NULL) {
+    response->body = "<h1>404 error</h1>";
+    response->body_size = sizeof(response->body);
+    response->status_code = NOT_FOUND;
+    response->content_type = "text/html";
+
+    return -1;
+  }
   fseek(file, 0, SEEK_END);
   fsize = ftell(file);
   rewind(file);
