@@ -14,27 +14,23 @@ http_response *create_response()
 
 int add_body(http_response *response, const http_request *request)
 {
-  char *file_contents, *target = strcmp(request->url, "/") == 0 ? "/index.html" : request->url;
+  char *target = strcmp(request->url, "/") == 0 ? "/index.html" : request->url;
   long fsize;
-  FILE *file = serve(target);
+  FILE *file = serve(target, response);
   if (file == NULL) {
     response->body = "<h1>404 error</h1>";
-    response->body_size = sizeof(response->body);
+    response->body_size = strlen(response->body) + 1;
     response->status_code = NOT_FOUND;
     response->content_type = "text/html";
 
     return -1;
   }
-  fseek(file, 0, SEEK_END);
-  fsize = ftell(file);
-  rewind(file);
-  file_contents = malloc(fsize + 1);
-  fread(file_contents, 1, fsize, file);
+  fsize = response->body_size;
+  response->body = malloc(fsize + 1);
+  fread(response->body, 1, fsize, file);
   fclose(file);
-  file_contents[fsize] = 0;
 
-  response->body = file_contents;
-  response->body_size = fsize;
+  response->body[fsize] = 0;
   response->status_code = OK;
   response->content_type = "text/html";
 
@@ -50,6 +46,7 @@ int send_response(int socket_fd, http_response *response)
         "Bad Request" :
           "Not Found";
   sprintf(buffer, HTTP_FORMAT, response->status_code, status_message, response->content_type, response->body_size, response->body);
+  print_response(response);
   write(socket_fd, buffer, 30000);
   close(socket_fd);
 
@@ -58,11 +55,8 @@ int send_response(int socket_fd, http_response *response)
 
 void destroy_response(http_response *response)
 {
-  if (response->body) {
+  if (response->status_code == OK && response->body) {
     free(response->body);
-  }
-  if (response->content_type) {
-    free(response->content_type);
   }
   free(response);
 }
@@ -71,12 +65,23 @@ void destroy_response(http_response *response)
 
 void print_response(http_response *response)
 {
-  printf("| HTTP/1.1 %d | Content-Type: %s | %s |\n", response->status_code, response->content_type, response->body);
+  printf("HTTP/1.1 %d\nContent-Type: %s\nContent-Length: %ld\n", response->status_code, response->content_type, response->body_size);
 }
 
-FILE *serve(const char *file_name)
+FILE *serve(const char *file_name, http_response *response)
 {
   char buffer[100] = {0};
+  long fsize;
   sprintf(buffer, "%s%s", STATIC_ROOT, file_name);
-  return fopen(buffer, "rb");
+  FILE *file = fopen(buffer, "rb");
+  if (file == NULL) {
+    return NULL;
+  }
+  fseek(file, 0, SEEK_END);
+  fsize = ftell(file);
+  rewind(file);
+
+  response->body_size = fsize;
+
+  return file;
 }

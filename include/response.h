@@ -24,6 +24,6 @@ void destroy_response(http_response *response);
 
 /* helpers */
 void print_response(http_response *response);
-FILE *serve(const char *file_name);
+FILE *serve(const char *file_name, http_response *response);
 
 #endif
