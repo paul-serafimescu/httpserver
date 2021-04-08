@@ -81,3 +81,8 @@ int run(http_server *server)
     }
   }
 }
+
+void destroy_server(http_server *server)
+{
+  free(server);
+}
