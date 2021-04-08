@@ -1,3 +1,4 @@
+#define _GNU_SOURCE
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -39,16 +40,20 @@ int add_body(http_response *response, const http_request *request)
 
 int send_response(int socket_fd, http_response *response)
 {
-  char buffer[30000] = {0};
   char *status_message = response->status_code == OK ?
     "OK" :
       response->status_code == BAD_REQUEST ?
         "Bad Request" :
           "Not Found";
-  sprintf(buffer, HTTP_FORMAT, response->status_code, status_message, response->content_type, response->body_size, response->body);
+  char *response_text;
+  int response_length = asprintf(&response_text, HTTP_FORMAT,
+    response->status_code, status_message,
+    response->content_type,
+    response->body_size, response->body);
   print_response(response);
-  write(socket_fd, buffer, 30000);
+  write(socket_fd, response_text, response_length);
   close(socket_fd);
+  free(response_text);
 
   return 0;
 }
@@ -70,10 +75,11 @@ void print_response(http_response *response)
 
 FILE *serve(const char *file_name, http_response *response)
 {
-  char buffer[100] = {0};
   long fsize;
-  sprintf(buffer, "%s%s", STATIC_ROOT, file_name);
-  FILE *file = fopen(buffer, "rb");
+  char *fs_name;
+  asprintf(&fs_name, "%s%s", STATIC_ROOT, file_name);
+  FILE *file = fopen(fs_name, "rb");
+  free(fs_name);
   if (file == NULL) {
     return NULL;
   }
