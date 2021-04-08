@@ -2,6 +2,7 @@
 #define REQUEST_H
 
 typedef struct {
+  int socket_fd;
   enum { // TODO: finish adding these
     REQUEST_GET,
     REQUEST_POST,

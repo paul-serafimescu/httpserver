@@ -18,6 +18,8 @@ int parse_request(int socket_fd, http_request *request)
     free(request->url);
   }
 
+  request->socket_fd = socket_fd;
+
   FILE *socket_file = fdopen(dup(socket_fd), "rb");
   if (socket_file == NULL) {
     perror("fdopen");

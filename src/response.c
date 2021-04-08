@@ -15,6 +15,7 @@ http_response *create_response()
 
 int add_body(http_response *response, const http_request *request)
 {
+  response->socket_fd = request->socket_fd;
   char *target = strcmp(request->url, "/") == 0 ? "/index.html" : request->url;
   long fsize;
   FILE *file = serve(target, response);
@@ -38,7 +39,7 @@ int add_body(http_response *response, const http_request *request)
   return 0;
 }
 
-int send_response(int socket_fd, http_response *response)
+int send_response(http_response *response)
 {
   char *status_message = response->status_code == OK ?
     "OK" :
@@ -51,8 +52,8 @@ int send_response(int socket_fd, http_response *response)
     response->content_type,
     response->body_size, response->body);
   print_response(response);
-  write(socket_fd, response_text, response_length);
-  close(socket_fd);
+  write(response->socket_fd, response_text, response_length);
+  close(response->socket_fd);
   free(response_text);
 
   return 0;

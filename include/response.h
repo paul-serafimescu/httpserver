@@ -7,6 +7,7 @@
 #define STATIC_ROOT "wwwroot"
 
 typedef struct {
+  int socket_fd;
   enum {
     OK = 200,
     NOT_FOUND = 404,
@@ -19,7 +20,7 @@ typedef struct {
 
 http_response *create_response();
 int add_body(http_response *response, const http_request *request);
-int send_response(int socket_fd, http_response *response);
+int send_response(http_response *response);
 void destroy_response(http_response *response);
 
 /* helpers */
