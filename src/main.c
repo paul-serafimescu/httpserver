@@ -17,9 +17,6 @@ int main(int argc, char **argv) {
   struct sockaddr_in request_address;
   size_t addrlen = sizeof(request_address);
 
-  /* should probably modularize the response stuff */
-  // char *message = "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: 12\r\n\r\nHello world!";
-
   /*
    * AF_INET is what can communicate, in this case IPv4
    * SOCK_STREAM is TCP
