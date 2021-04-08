@@ -41,14 +41,10 @@ int add_body(http_response *response, const http_request *request)
 
 int send_response(http_response *response)
 {
-  char *status_message = response->status_code == OK ?
-    "OK" :
-      response->status_code == BAD_REQUEST ?
-        "Bad Request" :
-          "Not Found";
+  const char *status_message = get_status_message(response->status_code);
   char *response_text;
   int response_length = asprintf(&response_text, HTTP_FORMAT,
-    response->status_code, status_message,
+    status_message,
     response->content_type,
     response->body_size, response->body);
   print_response(response);
@@ -72,6 +68,18 @@ void destroy_response(http_response *response)
 void print_response(http_response *response)
 {
   printf("HTTP/1.1 %d\nContent-Type: %s\nContent-Length: %ld\n", response->status_code, response->content_type, response->body_size);
+}
+
+const char *get_status_message(int status_code)
+{
+  switch (status_code) {
+    case OK:
+      return "200 OK";
+    case BAD_REQUEST:
+      return "400 Bad Request";
+    default:
+      return "404 Not Found";
+  }
 }
 
 FILE *serve(const char *file_name, http_response *response)

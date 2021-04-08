@@ -3,7 +3,7 @@
 
 #include "request.h"
 
-#define HTTP_FORMAT "HTTP/1.1 %d %s\r\nContent-Type: %s\r\nContent-Length: %ld\r\n\r\n%s"
+#define HTTP_FORMAT "HTTP/1.1 %s\r\nContent-Type: %s\r\nContent-Length: %ld\r\n\r\n%s"
 #define STATIC_ROOT "wwwroot"
 
 typedef struct {
@@ -25,6 +25,7 @@ void destroy_response(http_response *response);
 
 /* helpers */
 void print_response(http_response *response);
+const char *get_status_message(int status_code);
 FILE *serve(const char *file_name, http_response *response);
 
 #endif
