@@ -1,3 +1,6 @@
+#ifndef SERVER_H
+#define SERVER_H
+
 typedef struct {
   unsigned port;
   unsigned max_connections;
@@ -6,3 +9,5 @@ typedef struct {
 http_server *create_server(unsigned port, unsigned connections);
 int run(http_server *server);
 void destroy_server(http_server *server);
+
+#endif

@@ -75,8 +75,7 @@ int run(http_server *server)
 
     if (parse_request(new_socket, request) == 0) {
       http_response *response = create_response();
-      add_body(response, request);
-      send_response(response);
+      send_response(response, request);
       destroy_response(response);
     }
   }

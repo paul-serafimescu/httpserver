@@ -13,7 +13,7 @@ http_response *create_response()
   return response;
 }
 
-int add_body(http_response *response, const http_request *request)
+int send_response(http_response *response, const http_request *request)
 {
   response->socket_fd = request->socket_fd;
   char *target = strcmp(request->url, "/") == 0 ? "/index.html" : request->url;
@@ -36,11 +36,6 @@ int add_body(http_response *response, const http_request *request)
   response->status_code = OK;
   response->content_type = "text/html";
 
-  return 0;
-}
-
-int send_response(http_response *response)
-{
   const char *status_message = get_status_message(response->status_code);
   char *response_text;
   int response_length = asprintf(&response_text, HTTP_FORMAT,

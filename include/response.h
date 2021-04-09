@@ -19,8 +19,7 @@ typedef struct {
 } http_response;
 
 http_response *create_response();
-int add_body(http_response *response, const http_request *request);
-int send_response(http_response *response);
+int send_response(http_response *response, const http_request *request);
 void destroy_response(http_response *response);
 
 /* helpers */
