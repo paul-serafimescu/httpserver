@@ -21,21 +21,19 @@ int send_response(http_response *response, const http_request *request)
   FILE *file = serve(target, response);
   if (file == NULL) {
     response->body = "<h1>404 error</h1>";
-    response->body_size = strlen(response->body) + 1;
+    response->body_size = strlen(response->body);
     response->status_code = NOT_FOUND;
     response->content_type = "text/html";
+  } else {
+    fsize = response->body_size;
+    response->body = malloc(fsize + 1);
+    fread(response->body, 1, fsize, file);
+    fclose(file);
 
-    return -1;
+    response->body[fsize] = 0;
+    response->status_code = OK;
+    response->content_type = "text/html";
   }
-  fsize = response->body_size;
-  response->body = malloc(fsize + 1);
-  fread(response->body, 1, fsize, file);
-  fclose(file);
-
-  response->body[fsize] = 0;
-  response->status_code = OK;
-  response->content_type = "text/html";
-
   const char *status_message = get_status_message(response->status_code);
   char *response_text;
   int response_length = asprintf(&response_text, HTTP_FORMAT,
