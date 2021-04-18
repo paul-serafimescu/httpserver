@@ -5,6 +5,7 @@
 #include <string.h>
 
 #include "response.h"
+#include "route.h"
 
 http_response *create_response()
 {
@@ -13,12 +14,12 @@ http_response *create_response()
   return response;
 }
 
-int send_response(http_response *response, const http_request *request)
+int send_response(http_response *response, const http_request *request, route_table *table)
 {
   response->socket_fd = request->socket_fd;
   char *target = strcmp(request->url, "/") == 0 ? "/index.html" : request->url;
   long fsize;
-  FILE *file = serve(target, response);
+  FILE *file = serve(target, response, table);
   if (file == NULL) {
     response->body = "<h1>404 error</h1>";
     response->body_size = strlen(response->body);
@@ -75,13 +76,10 @@ const char *get_status_message(int status_code)
   }
 }
 
-FILE *serve(const char *file_name, http_response *response)
+FILE *serve(const char *url, http_response *response, route_table *table)
 {
   long fsize;
-  char *fs_name;
-  asprintf(&fs_name, "%s%s", STATIC_ROOT, file_name);
-  FILE *file = fopen(fs_name, "rb");
-  free(fs_name);
+  FILE *file = route_url(table, url);
   if (file == NULL) {
     return NULL;
   }

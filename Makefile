@@ -1,6 +1,6 @@
 SOURCE_PATH = $(CURDIR)/src
 SOURCE_FILES = $(wildcard $(SOURCE_PATH)/*.c)
-CFLAGS = -Wall -Wextra -Iinclude
+CFLAGS = -g -Wall -Wextra -Iinclude
 
 .PHONY: default run clean
 

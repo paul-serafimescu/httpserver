@@ -9,6 +9,7 @@
 #include "server.h"
 #include "request.h"
 #include "response.h"
+#include "route.h"
 
 http_server *create_server(unsigned port, unsigned connections)
 {
@@ -65,6 +66,7 @@ int run(http_server *server)
   printf("ready\n");
 
   http_request *request = create_request();
+  route_table *table = create_route_table();
 
   while(true) {
 
@@ -74,8 +76,9 @@ int run(http_server *server)
     }
 
     if (parse_request(new_socket, request) == 0) {
+      printf("%s\n", request->url);
       http_response *response = create_response();
-      send_response(response, request);
+      send_response(response, request, table);
       destroy_response(response);
     }
   }

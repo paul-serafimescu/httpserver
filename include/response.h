@@ -2,9 +2,9 @@
 #define RESPONSE_H
 
 #include "request.h"
+#include "route.h"
 
 #define HTTP_FORMAT "HTTP/1.1 %s\r\nContent-Type: %s\r\nContent-Length: %ld\r\n\r\n%s"
-#define STATIC_ROOT "wwwroot"
 
 typedef struct {
   int socket_fd;
@@ -19,12 +19,12 @@ typedef struct {
 } http_response;
 
 http_response *create_response();
-int send_response(http_response *response, const http_request *request);
+int send_response(http_response *response, const http_request *request, route_table *table);
 void destroy_response(http_response *response);
 
 /* helpers */
 void print_response(http_response *response);
 const char *get_status_message(int status_code);
-FILE *serve(const char *file_name, http_response *response);
+FILE *serve(const char *file_name, http_response *response, route_table *table);
 
 #endif
