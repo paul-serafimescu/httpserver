@@ -1,5 +1,4 @@
 #include "server.h"
-#include "utils.h"
 
 #define PORT 8000
 #define MAX_CONNECTIONS 10
