@@ -72,6 +72,10 @@ void destroy_queue(queue_t *queue)
 void print_queue(queue_t *queue)
 {
   struct node *cursor = queue->head;
+  if (queue->head == NULL) {
+    printf("empty queue\n");
+    return;
+  }
   do {
     printf("%d ", cursor->data);
     cursor = cursor->next;

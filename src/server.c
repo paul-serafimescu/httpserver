@@ -27,10 +27,10 @@ http_server *create_server(unsigned port, unsigned connections)
   return server;
 }
 
-void *handle_request(void *worker_id)
+void *handle_request(void *input)
 {
+  route_table *table = (route_table *)input;
   http_request *request = create_request();
-  route_table *table = create_route_table(); // maybe this should be a global variable idk
   int socket;
   while (true) {
     socket = -1;
@@ -57,7 +57,6 @@ int run(http_server *server)
 {
   int server_fd, new_socket, flag = 0, num_threads = NUM_THREADS, option_value = 1;
   pthread_t worker_threads[NUM_THREADS];
-  int thread_ids[NUM_THREADS];
   struct sockaddr_in request_address;
   size_t addrlen = sizeof(request_address);
 
@@ -99,11 +98,13 @@ int run(http_server *server)
   pthread_mutex_init(&queue_mutex, NULL);
   pthread_cond_init(&client_exists, NULL);
 
-  if (init_worker_thread(worker_threads, thread_ids, num_threads) < 0) {
+  route_table *table = create_route_table();
+
+  if (init_worker_thread(worker_threads, num_threads, table) < 0) {
     printf("help\n"); // idk
   }
 
-  if(listen(server_fd, server->max_connections) < 0) {
+  if (listen(server_fd, server->max_connections) < 0) {
     perror("listening");
     return 1;
   }
@@ -127,12 +128,11 @@ int run(http_server *server)
   }
 }
 
-int init_worker_thread(pthread_t threads[], int thread_ids[], int num_threads)
+int init_worker_thread(pthread_t threads[], int num_threads, route_table *table)
 {
   int i;
   for (i = 0; i < num_threads; i++) {
-    thread_ids[i] = i;
-    if (pthread_create(&threads[i], NULL, handle_request, &thread_ids[i])) {
+    if (pthread_create(&threads[i], NULL, handle_request, table)) {
       // idk how to handle this tbh
       return -1;
     }

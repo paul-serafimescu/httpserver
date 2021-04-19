@@ -3,6 +3,7 @@
 
 #include <pthread.h>
 #include "queue.h"
+#include "route.h"
 
 extern pthread_mutex_t queue_mutex;
 extern pthread_cond_t client_exists;
@@ -14,7 +15,7 @@ typedef struct {
 } http_server;
 
 http_server *create_server(unsigned port, unsigned connections);
-int init_worker_thread(pthread_t threads[], int thread_ids[], int num_threads);
+int init_worker_thread(pthread_t threads[], int num_threads, route_table *table);
 int run(http_server *server);
 void *handle_request(void *worker_id);
 void destroy_server(http_server *server);

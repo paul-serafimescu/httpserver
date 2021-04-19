@@ -17,9 +17,8 @@ http_response *create_response()
 int send_response(http_response *response, const http_request *request, route_table *table)
 {
   response->socket_fd = request->socket_fd;
-  char *target = strcmp(request->url, "/") == 0 ? "/index.html" : request->url;
   long fsize;
-  FILE *file = serve(target, response, table);
+  FILE *file = serve(strcmp(request->url, "/") == 0 ? "/index.html" : request->url, response, table);
   if (file == NULL) {
     response->body = "<h1>404 error</h1>";
     response->body_size = strlen(response->body);
