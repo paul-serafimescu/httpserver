@@ -5,7 +5,6 @@
 
 int main(int argc, char **argv) {
 
-  // listdir(".");
   http_server *server = create_server(PORT, MAX_CONNECTIONS);
   run(server);
 

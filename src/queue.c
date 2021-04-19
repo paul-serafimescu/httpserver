@@ -1,6 +1,8 @@
 #include <stdlib.h>
+#include <stdio.h>
 #include "queue.h"
 
+/* creates queue and initializes head and tail with NULL */
 queue_t *create_queue(void)
 {
   queue_t *queue = (queue_t *)malloc(sizeof(queue_t));
@@ -9,11 +11,13 @@ queue_t *create_queue(void)
   return queue;
 }
 
+/* returns 1 if queue is empty, 0 otherwise */
 int is_empty(queue_t *queue)
 {
   return queue->head == NULL;
 }
 
+/* creates a new node containing 'data' and adds it to the end of the queue */
 int enqueue(queue_t *queue, int data)
 {
   if (queue->head == NULL) {
@@ -33,6 +37,7 @@ int enqueue(queue_t *queue, int data)
   return 0;
 }
 
+/* resolves the head of the queue, populates the value of 'data' with the value of the head */
 int dequeue(queue_t *queue, int *data)
 {
   if (is_empty(queue)) return -1;
@@ -49,6 +54,7 @@ int dequeue(queue_t *queue, int *data)
   return 0;
 }
 
+/* deallocates queue */
 void destroy_queue(queue_t *queue)
 {
   if (queue == NULL) return;
@@ -60,4 +66,15 @@ void destroy_queue(queue_t *queue)
     current = temp;
   }
   free(queue);
+}
+
+/* debugging function for queues */
+void print_queue(queue_t *queue)
+{
+  struct node *cursor = queue->head;
+  do {
+    printf("%d ", cursor->data);
+    cursor = cursor->next;
+  } while (cursor != NULL);
+  printf("\n");
 }
