@@ -8,11 +8,11 @@
 typedef char *route_entry[2];
 
 typedef struct {
-	route_entry* routes;
-	int routes_size;
+  route_entry* routes;
+  int routes_size;
 } route_table;
 
-route_table *create_route_table(); // TODO: make this accept input
+route_table *create_route_table();
 FILE *route_url(route_table *table, const char *url);
 void destroy_route_table(route_table *table);
 
