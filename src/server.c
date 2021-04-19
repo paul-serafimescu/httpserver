@@ -15,6 +15,10 @@
 
 #define NUM_THREADS 10
 
+pthread_mutex_t queue_mutex;
+pthread_cond_t client_exists;
+queue_t *request_queue;
+
 http_server *create_server(unsigned port, unsigned connections)
 {
   http_server *server = malloc(sizeof(http_server));

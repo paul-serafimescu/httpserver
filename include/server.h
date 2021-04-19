@@ -4,9 +4,9 @@
 #include <pthread.h>
 #include "queue.h"
 
-pthread_mutex_t queue_mutex;
-pthread_cond_t client_exists;
-queue_t *request_queue;
+extern pthread_mutex_t queue_mutex;
+extern pthread_cond_t client_exists;
+extern queue_t *request_queue;
 
 typedef struct {
   unsigned port;
