@@ -23,7 +23,7 @@ route_table *create_route_table(size_t initial_size)
 
 void add_route(route_table *table, char *url, char *file_name)
 {
-  if (table->size == table->max_size) {
+  if (table->size + 1 == table->max_size) {
     table->max_size *= 2;
     table->routes = realloc(table->routes, sizeof(route_entry) * table->max_size);
   }
