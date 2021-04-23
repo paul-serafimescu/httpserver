@@ -98,7 +98,7 @@ int run(http_server *server)
   pthread_mutex_init(&queue_mutex, NULL);
   pthread_cond_init(&client_exists, NULL);
 
-  route_table *table = create_route_table();
+  route_table *table = create_route_table(0);
 
   if (init_worker_thread(worker_threads, num_threads, table) < 0) {
     printf("help\n"); // idk
