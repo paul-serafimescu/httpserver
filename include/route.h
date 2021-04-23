@@ -4,7 +4,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#define STATIC_ROOT "wwwroot"
+#define STATIC_ROOT "wwwroot/"
 
 typedef char *route_entry[2];
 
@@ -18,5 +18,7 @@ route_table *create_route_table(size_t initial_size);
 void add_route(route_table *table, char *url, char *file_name);
 FILE *route_url(route_table *table, const char *url);
 void destroy_route_table(route_table *table);
+
+char *prefix(char *original, char *prefix);
 
 #endif
