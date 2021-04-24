@@ -12,10 +12,13 @@ route_table *create_route_table(size_t initial_size)
   table->max_size = initial_size > 0 ? initial_size : 1;
   table->routes = (route_entry *)malloc(sizeof(route_entry) * initial_size);
 
-  /* could move this stuff out of here, idk whatever you want */
+  // could move this stuff out of here, idk whatever you want
+  // we should also handle "static" files like js and css separately
+  // so we don't have to explicitly declare routes for those
   add_route(table, "/", "index.html");
   add_route(table, "/index.html", "index.html");
   add_route(table, "/test.js", "test.js");
+  add_route(table, "/test.css", "test.css");
   add_route(table, "/routed", "index.html");
 
   return table;
@@ -33,7 +36,7 @@ char *prefix(char *original, char *prefix)
 
 void add_route(route_table *table, char *url, char *file_name)
 {
-  char *full_name = prefix(file_name, STATIC_ROOT);
+  char *full_name = prefix(file_name, WWW_ROOT);
   if (table->size + 1 == table->max_size) {
     table->max_size *= 2;
     table->routes = realloc(table->routes, sizeof(route_entry) * table->max_size);

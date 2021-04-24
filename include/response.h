@@ -25,6 +25,7 @@ void destroy_response(http_response *response);
 /* helpers */
 void print_response(http_response *response);
 const char *get_status_message(int status_code);
+char *get_content_type(const char *url);
 FILE *serve(const char *file_name, http_response *response, route_table *table);
 
 #endif

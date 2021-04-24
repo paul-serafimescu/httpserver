@@ -4,7 +4,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#define STATIC_ROOT "wwwroot/"
+#define WWW_ROOT "wwwroot/
 
 typedef char *route_entry[2];
 

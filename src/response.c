@@ -17,13 +17,13 @@ http_response *create_response()
 int send_response(http_response *response, const http_request *request, route_table *table)
 {
   response->socket_fd = request->socket_fd;
+  response->content_type = get_content_type(request->url);
   long fsize;
-  FILE *file = serve(strcmp(request->url, "/") == 0 ? "/index.html" : request->url, response, table);
+  FILE *file = serve(request->url, response, table);
   if (file == NULL) {
     response->body = "<h1>404 error</h1>";
     response->body_size = strlen(response->body);
     response->status_code = NOT_FOUND;
-    response->content_type = "text/html";
   } else {
     fsize = response->body_size;
     response->body = malloc(fsize + 1);
@@ -32,7 +32,6 @@ int send_response(http_response *response, const http_request *request, route_ta
 
     response->body[fsize] = 0;
     response->status_code = OK;
-    response->content_type = "text/html";
   }
   const char *status_message = get_status_message(response->status_code);
   char *response_text;
@@ -73,6 +72,20 @@ const char *get_status_message(int status_code)
     default:
       return "404 Not Found";
   }
+}
+
+char *get_content_type(const char *url)
+{
+  url = strrchr(url, '.');
+  if (url != NULL) {
+    if (strcmp(url, ".js") == 0)
+      return "application/javascript";
+    if (strcmp(url, ".css") == 0)
+      return "text/css";
+    if (strcmp(url, ".json") == 0)
+      return "application/json";
+  }
+  return "text/html";
 }
 
 FILE *serve(const char *url, http_response *response, route_table *table)
