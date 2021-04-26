@@ -102,7 +102,9 @@ int run(http_server *server)
 
   add_dir_route(table, "/", ".");
   add_dir_route(table, "/routed/", ".");
+  add_file_route(table, "/", "index.html");
   add_file_route(table, "/routed", "index.html");
+  add_file_route(table, "/routed/", "index.html");
 
   if (init_worker_thread(worker_threads, num_threads, table) < 0) {
     printf("help\n"); // idk

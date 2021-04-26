@@ -4,6 +4,8 @@
 
 #include "route.h"
 
+static void resize_table(route_table *table);
+
 route_table *create_route_table(size_t initial_size)
 {
   route_table *table = malloc(sizeof(route_table));
@@ -15,61 +17,70 @@ route_table *create_route_table(size_t initial_size)
   return table;
 }
 
-void add_file_route(route_table *table, char *url, char *file_name)
+static void resize_table(route_table *table)
 {
   if (table->size == table->capacity) {
     table->capacity *= 2;
     table->routes = realloc(table->routes,
         sizeof(route_entry) * table->capacity);
   }
+}
+
+void add_file_route(route_table *table, char *url, char *file_name)
+{
+  resize_table(table);
+
   table->routes[table->size].url = url;
   table->routes[table->size].path = file_name;
-
-  table->routes[table->size].depth = 0;
-  printf("DEBUG: %d %s\n", table->routes[table->size].depth, url);
+  table->routes[table->size].pathlen = strlen(file_name);
+  table->routes[table->size].type = ROUTE_TYPE_FILE;
 
   table->size++;
 }
 
 void add_dir_route(route_table *table, char *url, char *dir_name)
 {
-  if (table->size == table->capacity) {
-    table->capacity *= 2;
-    table->routes = realloc(table->routes,
-        sizeof(route_entry) * table->capacity);
-  }
-  table->routes[table->size].url = url;
-  table->routes[table->size].path = dir_name;
+  resize_table(table);
 
-  table->routes[table->size].depth = 0;
-  char *s = url;
-  while (*s) {
-    if (*s == '/') {
-      table->routes[table->size].depth++;
-    }
-    s++;
-  }
-  printf("DEBUG: %d %s\n", table->routes[table->size].depth, url);
+  table->routes[table->size].url = url;
+  table->routes[table->size].urllen = strlen(url);
+  table->routes[table->size].path = dir_name;
+  table->routes[table->size].pathlen = strlen(dir_name);
+  table->routes[table->size].type = ROUTE_TYPE_DIR;
 
   table->size++;
 }
 
 FILE *route_url(route_table *table, const char *url)
 {
-  size_t url_len = strlen(url);
-  if (!strcmp("/", url)) {
-    return fopen("wwwroot/index.html", "rb");
-  }
+  size_t urllen = strlen(url);
+  size_t longest_match;
+  size_t longest_prefix = 0;
   for (unsigned i = 0; i < table->size; i++) {
-    size_t entryurl_len = strlen(table->routes[i].url);
-    if (!table->routes[i].depth) {
-      if (!strcmp(table->routes[i].url, url)) {
-        FILE *file = fopen(table->routes[i].path, "rb");
-        return file;
-      }
-    } else {
-      return NULL;
+    switch (table->routes[i].type) {
+      case ROUTE_TYPE_FILE:
+        if (!strcmp(table->routes[i].url, url)) {
+          char path[table->routes[i].pathlen + 9];
+          sprintf(path, "wwwroot/%s", table->routes[i].path);
+          return fopen(path, "rb");
+        }
+        break;
+      case ROUTE_TYPE_DIR:
+        ;
+        size_t prefixlen = table->routes[i].urllen;
+        if (prefixlen > longest_prefix &&
+            !strncmp(table->routes[i].url, url, prefixlen)) {
+          longest_match = i;
+          longest_prefix = prefixlen;
+        }
+        break;
     }
+  }
+  if (longest_prefix > 0) {
+    route_entry *route = table->routes + longest_match;
+    char path[urllen - route->urllen + route->pathlen + 10];
+    sprintf(path, "wwwroot/%s/%s", route->path, url + route->urllen);
+    return fopen(path, "rb");
   }
   return NULL;
 }

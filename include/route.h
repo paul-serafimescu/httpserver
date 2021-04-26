@@ -4,10 +4,17 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+typedef enum {
+  ROUTE_TYPE_FILE,
+  ROUTE_TYPE_DIR
+} route_type;
+
 typedef struct {
-	char *url;
-	char *path;
-	int depth;
+  route_type type;
+  char *url;
+  char *path;
+  size_t urllen;
+  size_t pathlen;
 } route_entry;
 
 typedef struct {
