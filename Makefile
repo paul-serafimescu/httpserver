@@ -7,7 +7,7 @@ CFLAGS = -g -pthread -Wall -Wextra -Iinclude
 default: server
 
 server: $(SOURCE_FILES)
-	gcc $(CFLAGS) $^ -o $@
+	gcc $(CFLAGS) $^ -o $@ -lsqlite3
 
 run: server
 	./server
