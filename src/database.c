@@ -29,10 +29,9 @@ sql_result_t *select_all(database_t *db, const char *table_name)
   result->num_cols = 0;
 
   size_t query_size = strlen(table_name) + 15;
-  char *query = (char *)malloc(query_size);
+  char query[query_size];
   sprintf(query, "SELECT * FROM %s", table_name);
   int rc = sqlite3_prepare_v2(db->db, query, query_size, &db->prepared_statement, NULL);
-  free(query);
   if (rc != SQLITE_OK) {
     fprintf(stderr, "Error preparing query.\n");
   }
@@ -60,25 +59,22 @@ sql_result_t *select_all(database_t *db, const char *table_name)
           size_t value_length = strlen(cell) + 1;
           entry.t = (char *)malloc(value_length);
           strncpy(entry.t, cell, value_length);
-          result->columns[i].values[row] = entry;
           result->columns[i].type = TEXT;
           break;
         case SQLITE_INTEGER:
           entry.i = sqlite3_column_int(db->prepared_statement, i);
-          result->columns[i].values[row] = entry;
           result->columns[i].type = INTEGER;
           break;
         case SQLITE_FLOAT:
           entry.d = sqlite3_column_double(db->prepared_statement, i);
-          result->columns[i].values[row] = entry;
           result->columns[i].type = REAL;
           break;
         default:
           entry.v = NULL;
-          result->columns[i].values[row] = entry;
           result->columns[i].type = NULL_VALUE;
           break;
       }
+      result->columns[i].values[row] = entry;
       result->columns[i].num_rows++;
     }
   }
