@@ -13,9 +13,9 @@ typedef struct {
     BLOB = SQLITE_BLOB,
     NULL_VALUE = SQLITE_NULL
   } type;
-  db_entry_t *values;
+  db_entry_t *entries;
   size_t num_rows;
-  size_t max_rows;
+  size_t capacity;
 } column_t;
 
 typedef struct {
@@ -30,6 +30,8 @@ typedef struct {
 } database_t;
 
 database_t *create_cursor(const char *file_name);
+sql_result_t *init_result();
+int build_result(sql_result_t *result, database_t *db, const char *query, size_t query_size);
 sql_result_t *select_all(database_t *db, const char *table_name);
 void destroy_result(sql_result_t *result);
 void destroy_cursor(database_t *db);
