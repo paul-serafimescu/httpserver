@@ -32,6 +32,7 @@ sql_result_t *select_all(database_t *db, const char *table_name)
   char *query = (char *)malloc(query_size);
   sprintf(query, "SELECT * FROM %s", table_name);
   int rc = sqlite3_prepare_v2(db->db, query, query_size, &db->prepared_statement, NULL);
+  free(query);
   if (rc != SQLITE_OK) {
     fprintf(stderr, "Error preparing query.\n");
   }
@@ -52,25 +53,33 @@ sql_result_t *select_all(database_t *db, const char *table_name)
         result->columns[i].values = (db_entry_t *)realloc(result->columns[i].values, sizeof(db_entry_t) * result->columns[i].max_rows);
       }
       int type = sqlite3_column_type(db->prepared_statement, i);
-      db_entry_t *entry = (db_entry_t *)malloc(sizeof(db_entry_t));
+      db_entry_t entry;
       switch (type) {
-        case SQLITE_TEXT:
-          entry->t = sqlite3_column_text(db->prepared_statement, i);
-          result->columns[i].num_rows++;
-          result->columns[i].values[row] = *entry;
-          // printf("%s\n", result->columns[i].values[row].t);
+        case SQLITE_TEXT:;
+          char *cell = (char *)sqlite3_column_text(db->prepared_statement, i);
+          size_t value_length = strlen(cell) + 1;
+          entry.t = (char *)malloc(value_length);
+          strncpy(entry.t, cell, value_length);
+          result->columns[i].values[row] = entry;
           result->columns[i].type = TEXT;
           break;
         case SQLITE_INTEGER:
-          printf("%d\n", sqlite3_column_int(db->prepared_statement, i));
+          entry.i = sqlite3_column_int(db->prepared_statement, i);
+          result->columns[i].values[row] = entry;
+          result->columns[i].type = INTEGER;
           break;
         case SQLITE_FLOAT:
-          printf("%f\n", sqlite3_column_double(db->prepared_statement, i));
+          entry.d = sqlite3_column_double(db->prepared_statement, i);
+          result->columns[i].values[row] = entry;
+          result->columns[i].type = REAL;
           break;
         default:
-          printf("NULL\n");
+          entry.v = NULL;
+          result->columns[i].values[row] = entry;
+          result->columns[i].type = NULL_VALUE;
           break;
       }
+      result->columns[i].num_rows++;
     }
   }
   sqlite3_finalize(db->prepared_statement);
@@ -80,14 +89,21 @@ sql_result_t *select_all(database_t *db, const char *table_name)
 void print_result(sql_result_t *result)
 {
   size_t i;
-  printf("num cols: %zu\n", result->num_cols);
   for (i = 0 ; i < result->num_cols; i++) {
-    printf("num rows: %zu\n", result->columns[i].num_rows);
     size_t j;
     for (j = 0; j < result->columns[i].num_rows; j++) {
       switch (result->columns[i].type) {
         case TEXT:
           printf("%s\n", result->columns[i].values[j].t);
+          break;
+        case REAL:
+          printf("%f\n", result->columns[i].values[j].d);
+          break;
+        case INTEGER:
+          printf("%d\n", result->columns[i].values[j].i);
+          break;
+        case NULL_VALUE:
+          printf("%s\n", "NULL");
           break;
         default:
           break;
@@ -96,13 +112,25 @@ void print_result(sql_result_t *result)
   }
 }
 
+void destroy_result(sql_result_t *result)
+{
+  size_t i;
+  for (i = 0; i < result->num_cols; i++) {
+    size_t j;
+    if (result->columns[i].type == TEXT)
+      for (j = 0; j < result->columns[i].num_rows; j++)
+        free(result->columns[i].values[j].t);
+    free(result->columns[i].values);
+  }
+  free(result->columns);
+  free(result);
+}
+
 void destroy_cursor(database_t *db)
 {
-  if (db->db)
-    free(db->db);
-  if (db->error_message)
-    free(db->error_message);
-  if (db->prepared_statement)
-    free(db->prepared_statement);
+  if (sqlite3_close_v2(db->db) != SQLITE_OK) {
+    printf("whoops, SQLite3 broke!\n");
+  }
+  free(db->error_message);
   free(db);
 }

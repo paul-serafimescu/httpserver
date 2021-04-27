@@ -23,8 +23,10 @@ queue_t *request_queue;
 http_server *create_server(unsigned port, unsigned connections)
 {
   database_t *db = create_cursor("./db.sqlite3");
-  sql_result_t *result = select_all(db, "Test");
+  sql_result_t *result = select_all(db, "Test3");
   print_result(result);
+  destroy_result(result);
+  destroy_cursor(db);
   http_server *server = malloc(sizeof(http_server));
   server->port = port;
   server->max_connections = connections;
