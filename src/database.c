@@ -6,6 +6,7 @@
 #include "database.h"
 
 static void resize_column(column_t *column);
+static char *str_copy_from(const char *src);
 
 database_t *create_cursor(const char *file_name)
 {
@@ -73,6 +74,7 @@ void destroy_result(sql_result_t *result)
 {
   size_t i;
   for (i = 0; i < result->num_cols; i++) {
+    free(result->columns[i].name);
     size_t j;
     if (result->columns[i].type == TEXT)
       for (j = 0; j < result->columns[i].num_rows; j++)
@@ -100,6 +102,14 @@ static void resize_column(column_t *column)
   }
 }
 
+static char *str_copy_from(const char *src)
+{
+  size_t src_length = strlen(src) + 1;
+  char *dest = (char *)malloc(src_length);
+  strncpy(dest, src, src_length);
+  return dest;
+}
+
 int build_result(sql_result_t *result, database_t *db, const char *query, size_t query_size)
 {
   int rc = sqlite3_prepare_v2(db->db, query, query_size, &db->prepared_statement, NULL);
@@ -120,14 +130,14 @@ int build_result(sql_result_t *result, database_t *db, const char *query, size_t
     int i;
     for (i = 0; i < num_columns; i++) {
       resize_column(&result->columns[i]);
+      if (!row) {
+        result->columns[i].name = str_copy_from(sqlite3_column_name(db->prepared_statement, i));
+      }
       int type = sqlite3_column_type(db->prepared_statement, i);
       db_entry_t entry;
       switch (type) {
         case SQLITE_TEXT:;
-          char *cell = (char *)sqlite3_column_text(db->prepared_statement, i);
-          size_t value_length = strlen(cell) + 1;
-          entry.t = (char *)malloc(value_length);
-          strncpy(entry.t, cell, value_length);
+          entry.t = str_copy_from((char *)sqlite3_column_text(db->prepared_statement, i));
           result->columns[i].type = TEXT;
           break;
         case SQLITE_INTEGER:

@@ -16,6 +16,7 @@ typedef struct {
   db_entry_t *entries;
   size_t num_rows;
   size_t capacity;
+  char *name;
 } column_t;
 
 typedef struct {
