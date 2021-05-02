@@ -1,7 +1,7 @@
 #ifndef REQUEST_H
 #define REQUEST_H
 
-typedef struct {
+typedef struct http_request {
   int socket_fd;
   enum { // TODO: finish adding these
     REQUEST_GET,

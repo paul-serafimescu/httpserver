@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "response.h"
 #include "route.h"
 
 static void resize_table(route_table *table);
@@ -51,18 +52,29 @@ void add_dir_route(route_table *table, char *url, char *dir_name)
   table->size++;
 }
 
-FILE *route_url(route_table *table, const char *url)
+route_target route_url(route_table *table, const char *url)
 {
   size_t urllen = strlen(url);
   size_t longest_match;
   size_t longest_prefix = 0;
+  route_target target;
+
   for (unsigned i = 0; i < table->size; i++) {
     switch (table->routes[i].type) {
       case ROUTE_TYPE_FILE:
         if (!strcmp(table->routes[i].url, url)) {
           char path[table->routes[i].pathlen + 9];
           sprintf(path, "wwwroot/%s", table->routes[i].path);
-          return fopen(path, "rb");
+          target.file = fopen(path, "rb");
+          target.type = target.file ? ROUTE_TARGET_FILE : ROUTE_TARGET_NONE;
+          return target;
+        }
+        break;
+      case ROUTE_TYPE_HANDLER:
+        if (!strcmp(table->routes[i].url, url)) {
+          target.type = ROUTE_TARGET_HANDLER;
+          target.handler = table->routes[i].handler;
+          return target;
         }
         break;
       case ROUTE_TYPE_DIR:
@@ -80,9 +92,12 @@ FILE *route_url(route_table *table, const char *url)
     route_entry *route = table->routes + longest_match;
     char path[urllen - route->urllen + route->pathlen + 10];
     sprintf(path, "wwwroot/%s/%s", route->path, url + route->urllen);
-    return fopen(path, "rb");
+    target.file = fopen(path, "rb");
+    target.type = target.file ? ROUTE_TARGET_FILE : ROUTE_TARGET_NONE;
+    return target;
   }
-  return NULL;
+  target.type = ROUTE_TARGET_NONE;
+  return target;
 }
 
 void destroy_route_table(route_table *table)

@@ -18,20 +18,18 @@ int send_response(http_response *response, const http_request *request, route_ta
 {
   response->socket_fd = request->socket_fd;
   response->content_type = get_content_type(request->url);
-  long fsize;
-  FILE *file = serve(request->url, response, table);
-  if (file == NULL) {
-    response->body = "<h1>404 error</h1>";
-    response->body_size = strlen(response->body);
-    response->status_code = NOT_FOUND;
-  } else {
-    fsize = response->body_size;
-    response->body = malloc(fsize + 1);
-    fread(response->body, 1, fsize, file);
-    fclose(file);
-
-    response->body[fsize] = 0;
-    response->status_code = OK;
+  route_target target = route_url(table, request->url);
+  switch (target.type) {
+    case ROUTE_TARGET_NONE:
+    case ROUTE_TARGET_HANDLER:
+      response->body = "<h1>404 error</h1>";
+      response->body_size = strlen(response->body);
+      response->status_code = NOT_FOUND;
+      break;
+    case ROUTE_TARGET_FILE:
+      serve_static(target.file, response);
+      fclose(target.file);
+      break;
   }
   const char *status_message = get_status_message(response->status_code);
   char *response_text;
@@ -88,18 +86,14 @@ char *get_content_type(const char *url)
   return "text/html";
 }
 
-FILE *serve(const char *url, http_response *response, route_table *table)
+void serve_static(FILE *file, http_response *response)
 {
-  long fsize;
-  FILE *file = route_url(table, url);
-  if (file == NULL) {
-    return NULL;
-  }
   fseek(file, 0, SEEK_END);
-  fsize = ftell(file);
+  long fsize = ftell(file);
   rewind(file);
-
   response->body_size = fsize;
 
-  return file;
+  response->body = malloc(fsize);
+  fread(response->body, 1, fsize, file);
+  response->status_code = OK;
 }

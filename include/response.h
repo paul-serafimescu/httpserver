@@ -6,7 +6,7 @@
 
 #define HTTP_FORMAT "HTTP/1.1 %s\r\nContent-Type: %s\r\nContent-Length: %ld\r\n\r\n%s"
 
-typedef struct {
+typedef struct http_response {
   int socket_fd;
   enum {
     OK = 200,
@@ -26,6 +26,6 @@ void destroy_response(http_response *response);
 void print_response(http_response *response);
 const char *get_status_message(int status_code);
 char *get_content_type(const char *url);
-FILE *serve(const char *file_name, http_response *response, route_table *table);
+void serve_static(FILE *file, http_response *response);
 
 #endif
