@@ -11,6 +11,7 @@ http_response *create_response()
 {
   http_response *response = malloc(sizeof(http_response));
   response->body = NULL;
+  response->status_code = OK;
   return response;
 }
 
@@ -21,10 +22,12 @@ int send_response(http_response *response, const http_request *request, route_ta
   route_target target = route_url(table, request->url);
   switch (target.type) {
     case ROUTE_TARGET_NONE:
-    case ROUTE_TARGET_HANDLER:
       response->body = "<h1>404 error</h1>";
       response->body_size = strlen(response->body);
       response->status_code = NOT_FOUND;
+      break;
+    case ROUTE_TARGET_HANDLER:
+      target.handler(request, response);
       break;
     case ROUTE_TARGET_FILE:
       serve_static(target.file, response);
@@ -93,7 +96,8 @@ void serve_static(FILE *file, http_response *response)
   rewind(file);
   response->body_size = fsize;
 
-  response->body = malloc(fsize);
+  response->body = malloc(fsize + 1);
   fread(response->body, 1, fsize, file);
+  response->body[fsize] = 0;
   response->status_code = OK;
 }

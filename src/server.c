@@ -1,3 +1,4 @@
+#define _GNU_SOURCE
 #include <stdio.h>
 #include <sys/socket.h>
 #include <unistd.h>
@@ -19,6 +20,8 @@
 pthread_mutex_t queue_mutex;
 pthread_cond_t client_exists;
 queue_t *request_queue;
+
+void test_handler(const http_request *request, http_response *response);
 
 http_server *create_server(unsigned port, unsigned connections)
 {
@@ -111,6 +114,7 @@ int run(http_server *server)
   add_file_route(table, "/", "index.html");
   add_file_route(table, "/routed", "index.html");
   add_file_route(table, "/routed/", "index.html");
+  add_handler_route(table, "/handle", test_handler);
 
   if (init_worker_thread(worker_threads, num_threads, table) < 0) {
     printf("help\n"); // idk
@@ -156,4 +160,15 @@ int init_worker_thread(pthread_t threads[], int num_threads, route_table *table)
 void destroy_server(http_server *server)
 {
   free(server);
+}
+
+void test_handler(const http_request *request, http_response *response)
+{
+  static int count = 0;
+  if (response->status_code == OK && response->body) {
+    free(response->body);
+  }
+  response->body_size = asprintf(&response->body, "<p>count=%d</p>", count);
+  response->status_code = OK;
+  count++;
 }

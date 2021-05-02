@@ -52,6 +52,18 @@ void add_dir_route(route_table *table, char *url, char *dir_name)
   table->size++;
 }
 
+void add_handler_route(route_table *table, char *url, http_handler handler)
+{
+  resize_table(table);
+
+  table->routes[table->size].url = url;
+  table->routes[table->size].urllen = strlen(url);
+  table->routes[table->size].type = ROUTE_TYPE_HANDLER;
+  table->routes[table->size].handler = handler;
+
+  table->size++;
+}
+
 route_target route_url(route_table *table, const char *url)
 {
   size_t urllen = strlen(url);

@@ -7,7 +7,7 @@
 // I'm sorry
 typedef struct http_request http_request;
 typedef struct http_response http_response;
-typedef void (*http_handler)(http_request *request, http_response *response);
+typedef void (*http_handler)(const http_request *request, http_response *response);
 
 typedef enum {
   ROUTE_TYPE_FILE,
