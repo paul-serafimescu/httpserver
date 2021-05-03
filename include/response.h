@@ -4,7 +4,7 @@
 #include "request.h"
 #include "route.h"
 
-#define HTTP_FORMAT "HTTP/1.1 %s\r\nContent-Type: %s\r\nContent-Length: %ld\r\n\r\n%s"
+#define HTTP_FORMAT "HTTP/1.1 %s\r\nContent-Type: %s\r\nContent-Length: %ld\r\n\r\n"
 
 typedef struct http_response {
   int socket_fd;

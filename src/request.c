@@ -45,6 +45,7 @@ int parse_request(int socket_fd, http_request *request)
     return -1;
   }
 
+  free(method_str);
   fclose(socket_file);
   return 0;
 }

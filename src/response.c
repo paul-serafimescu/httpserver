@@ -39,11 +39,12 @@ int send_response(http_response *response, const http_request *request, route_ta
   }
   const char *status_message = get_status_message(response->status_code);
   char *response_text;
-  int response_length = asprintf(&response_text, HTTP_FORMAT,
+  int response_header_length = asprintf(&response_text, HTTP_FORMAT,
     status_message,
     response->content_type,
-    response->body_size, response->body);
-  write(response->socket_fd, response_text, response_length);
+    response->body_size);
+  write(response->socket_fd, response_text, response_header_length);
+  write(response->socket_fd, response->body, response->body_size);
   log_response(request, response);
   close(response->socket_fd);
   free(response_text);
@@ -84,7 +85,7 @@ char *get_content_type(const char *url)
     if (strcmp(url, ".json") == 0)
       return "application/json";
   }
-  return "text/html";
+  return "";
 }
 
 void serve_static(FILE *file, http_response *response)
