@@ -31,3 +31,5 @@ int listdir(const char *path)
 
   return 0;
 }
+
+void;
