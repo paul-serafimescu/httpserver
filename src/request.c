@@ -35,9 +35,9 @@ int parse_request(int socket_fd, http_request *request)
     return -1;
   }
 
-  if (strcmp(method_str, "GET")) {
+  if (strcmp(method_str, "GET") == 0) {
     request->method = REQUEST_GET;
-  } else if (strcmp(method_str, "POST")) {
+  } else if (strcmp(method_str, "POST") == 0) {
     request->method = REQUEST_POST;
   } else {
     free(method_str);

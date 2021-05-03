@@ -1,12 +1,14 @@
 #ifndef REQUEST_H
 #define REQUEST_H
 
+typedef enum {
+  REQUEST_GET,
+  REQUEST_POST
+} request_method;
+
 typedef struct http_request {
   int socket_fd;
-  enum { // TODO: finish adding these
-    REQUEST_GET,
-    REQUEST_POST,
-  } method;
+  request_method method; // TODO: finish adding these
   char *url;
   // TODO: parse and store the headers
 } http_request;

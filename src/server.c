@@ -25,11 +25,6 @@ void test_handler(const http_request *request, http_response *response);
 
 http_server *create_server(unsigned port, unsigned connections)
 {
-  database_t *db = create_cursor("./db.sqlite3");
-  sql_result_t *result = select_all(db, "Test3");
-  print_result(result);
-  destroy_result(result);
-  destroy_cursor(db);
   http_server *server = malloc(sizeof(http_server));
   server->port = port;
   server->max_connections = connections;
@@ -49,10 +44,8 @@ void *handle_request(void *input)
     else
       dequeue(request_queue, &socket);
     pthread_mutex_unlock(&queue_mutex);
-    // printf("socket #%d\n", socket);
     if (socket >= 0) {
       if (parse_request(socket, request) == 0) {
-        printf("%s\n", request->url);
         http_response *response = create_response();
         send_response(response, request, table);
         destroy_response(response);

@@ -3,9 +3,12 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
+#include <time.h>
 
 #include "response.h"
 #include "route.h"
+
+static const char *method_to_str(request_method method);
 
 http_response *create_response()
 {
@@ -40,8 +43,8 @@ int send_response(http_response *response, const http_request *request, route_ta
     status_message,
     response->content_type,
     response->body_size, response->body);
-  print_response(response);
   write(response->socket_fd, response_text, response_length);
+  log_response(request, response);
   close(response->socket_fd);
   free(response_text);
 
@@ -57,11 +60,6 @@ void destroy_response(http_response *response)
 }
 
 /* helpers */
-
-void print_response(http_response *response)
-{
-  printf("HTTP/1.1 %d\nContent-Type: %s\nContent-Length: %ld\n", response->status_code, response->content_type, response->body_size);
-}
 
 const char *get_status_message(int status_code)
 {
@@ -100,4 +98,32 @@ void serve_static(FILE *file, http_response *response)
   fread(response->body, 1, fsize, file);
   response->body[fsize] = 0;
   response->status_code = OK;
+}
+
+void log_response(const http_request *request, const http_response *response)
+{
+  char buffer[100];
+  time_t now = time(NULL);
+  struct tm *t = localtime(&now);
+  strftime(buffer, sizeof(buffer) - 1, "%Y-%m-%d %H:%M:%S", t);
+  printf("[%s] \"%s %s HTTP/1.1\" %d %ld\n",
+    buffer,
+    method_to_str(request->method),
+    request->url,
+    response->status_code,
+    response->body_size
+  );
+  fflush(stdout);
+}
+
+static const char *method_to_str(request_method method)
+{
+  switch (method) {
+    case REQUEST_GET:
+      return "GET";
+    case REQUEST_POST:
+      return "POST";
+    default:
+      return "UNKNOWN";
+  }
 }
