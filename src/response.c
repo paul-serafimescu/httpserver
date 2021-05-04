@@ -32,11 +32,21 @@ void render(const http_request *request, http_response *response, sql_result_t *
     int fd[2];
     char buffer[3000], command[3000] = "m4 ", target[300]; // there has to be a better way to do this
     if (pipe(fd) < 0) {
-      printf("uh oh pipe failed >.<\n");
+      log_error("pipe failed");
+      response->body = "<h1>500 error</h1>";
+      response->body_size = strlen(response->body);
+      response->status_code = INTERNAL_SERVER_ERROR;
+      destroy_result(context);
+      return;
     }
     pid_t pid = fork();
     if (pid < 0) {
-      printf("uh oh you\'re in trouble\n");
+      log_error("fork failed");
+      response->body = "<h1>500 error</h1>";
+      response->body_size = strlen(response->body);
+      response->status_code = INTERNAL_SERVER_ERROR;
+      destroy_result(context);
+      return;
     } else if (pid == 0) {
       close(fd[0]);
       dup2(fd[1], STDOUT_FILENO);
@@ -66,18 +76,16 @@ void render(const http_request *request, http_response *response, sql_result_t *
       exit(errno);
     } else {
       close(fd[1]);
-      ssize_t end;
-      if ((end = read(fd[0], buffer, sizeof(buffer))) < 0) {
+      if ((response->body_size = read(fd[0], buffer, sizeof(buffer))) < 0) {
         fprintf(stderr, "no output recovered\n");
       }
-      buffer[end] = '\0';
+      response->body = malloc(response->body_size);
+      memcpy(response->body, buffer, response->body_size);
       waitpid(pid, NULL, 0);
     }
-    response->body_size = asprintf(&response->body, buffer);
     destroy_result(context);
   }
   response->status_code = OK;
-  return;
 }
 
 int send_response(http_response *response, const http_request *request, route_table *table, database_t *database)
@@ -131,8 +139,10 @@ const char *get_status_message(int status_code)
       return "200 OK";
     case BAD_REQUEST:
       return "400 Bad Request";
-    default:
+    case NOT_FOUND:
       return "404 Not Found";
+    default:
+      return "500 Internal Server Error";
   }
 }
 
@@ -176,7 +186,15 @@ void log_response(const http_request *request, const http_response *response)
     response->status_code,
     response->body_size
   );
-  fflush(stdout);
+}
+
+void log_error(char *msg)
+{
+  char buffer[100];
+  time_t now = time(NULL);
+  struct tm *t = localtime(&now);
+  strftime(buffer, sizeof(buffer) - 1, "%Y-%m-%d %H:%M:%S", t);
+  printf("[%s] ERROR: %s\n", buffer, msg);
 }
 
 static const char *method_to_str(request_method method)

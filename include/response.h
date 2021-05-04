@@ -13,7 +13,8 @@ typedef struct http_response {
   enum {
     OK = 200,
     NOT_FOUND = 404,
-    BAD_REQUEST = 400
+    BAD_REQUEST = 400,
+    INTERNAL_SERVER_ERROR = 500,
   } status_code;
   char *content_type;
   char *body;
