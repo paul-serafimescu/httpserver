@@ -8,7 +8,7 @@
 #include "response.h"
 #include "route.h"
 
-static const char *method_to_str(request_method method);
+static const char *get_method_name(request_method method);
 
 http_response *create_response()
 {

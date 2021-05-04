@@ -161,7 +161,9 @@ void test_handler(const http_request *request, http_response *response)
   if (response->status_code == OK && response->body) {
     free(response->body);
   }
-  response->body_size = asprintf(&response->body, "<p>count=%d</p>", count);
+  response->body_size =
+    asprintf(&response->body, "<p>count=%d Host=%s</p>",
+        count, get_request_header(request, "Host"));
   response->status_code = OK;
   count++;
 }
