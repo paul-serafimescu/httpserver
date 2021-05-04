@@ -1,8 +1,10 @@
 #ifndef RESPONSE_H
 #define RESPONSE_H
 
+#include <unistd.h>
 #include "request.h"
 #include "route.h"
+#include "database.h"
 
 #define HTTP_FORMAT "HTTP/1.1 %s\r\nContent-Type: %s\r\nContent-Length: %ld\r\n\r\n"
 
@@ -19,7 +21,7 @@ typedef struct http_response {
 } http_response;
 
 http_response *create_response();
-int send_response(http_response *response, const http_request *request, route_table *table);
+int send_response(http_response *response, const http_request *request, route_table *table, database_t *database);
 void destroy_response(http_response *response);
 
 /* helpers */
@@ -27,5 +29,6 @@ void log_response(const http_request *request, const http_response *response);
 const char *get_status_message(int status_code);
 char *get_content_type(const char *url);
 void serve_static(FILE *file, http_response *response);
+void render(const http_request *request, http_response *response, sql_result_t *context, const char *template_name);
 
 #endif

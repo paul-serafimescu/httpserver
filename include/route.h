@@ -3,11 +3,12 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include "database.h"
 
 // I'm sorry
 typedef struct http_request http_request;
 typedef struct http_response http_response;
-typedef void (*http_handler)(const http_request *request, http_response *response);
+typedef void (*http_handler)(const http_request *request, http_response *response, database_t *database);
 
 typedef enum {
   ROUTE_TYPE_FILE,

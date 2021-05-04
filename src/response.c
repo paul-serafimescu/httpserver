@@ -4,21 +4,83 @@
 #include <unistd.h>
 #include <string.h>
 #include <time.h>
+#include <errno.h>
+#include <sys/wait.h>
 
 #include "response.h"
+#include "database.h"
 #include "route.h"
 
 static const char *method_to_str(request_method method);
 
 http_response *create_response()
 {
-  http_response *response = malloc(sizeof(http_response));
+  http_response *response = (http_response *)malloc(sizeof(http_response));
   response->body = NULL;
   response->status_code = OK;
   return response;
 }
 
-int send_response(http_response *response, const http_request *request, route_table *table)
+void render(const http_request *request, http_response *response, sql_result_t *context, const char *template_name)
+{
+  if (response->status_code == OK && response->body) {
+    free(response->body);
+  }
+  if (context == NULL) {
+    response->body_size = asprintf(&response->body, "<h1>no idea what to do in here</h1>");
+  } else {
+    int fd[2];
+    char buffer[3000], command[3000] = "m4 ", target[300]; // there has to be a better way to do this
+    if (pipe(fd) < 0) {
+      printf("uh oh pipe failed >.<\n");
+    }
+    pid_t pid = fork();
+    if (pid < 0) {
+      printf("uh oh you\'re in trouble\n");
+    } else if (pid == 0) {
+      close(fd[0]);
+      dup2(fd[1], STDOUT_FILENO);
+      close(fd[1]);
+      size_t i;
+      for (i = 0; i < context->num_cols; i++) {
+        char dfn_macro[300];
+        switch (context->columns[i].type) {
+          case TEXT:
+            sprintf(dfn_macro, "\'-D__%s__=%s\' ", context->columns[i].name, context->columns[i].entries[0].t);
+            break;
+          case INTEGER:
+            sprintf(dfn_macro, "\'-D__%s__=%d\' ", context->columns[i].name, context->columns[i].entries[0].i);
+            break;
+          case REAL:
+            sprintf(dfn_macro, "\'-D__%s__=%f\' ", context->columns[i].name, context->columns[i].entries[0].d);
+            break;
+          default:
+            break;
+        }
+        strcat(command, dfn_macro);
+      }
+      sprintf(target, "wwwroot/%s", template_name);
+      strcat(command, target);
+      char *argv[] = { "/usr/bin/bash", "-c", command, NULL };
+      execvp(argv[0], argv);
+      exit(errno);
+    } else {
+      close(fd[1]);
+      ssize_t end;
+      if ((end = read(fd[0], buffer, sizeof(buffer))) < 0) {
+        fprintf(stderr, "no output recovered\n");
+      }
+      buffer[end] = '\0';
+      waitpid(pid, NULL, 0);
+    }
+    response->body_size = asprintf(&response->body, buffer);
+    destroy_result(context);
+  }
+  response->status_code = OK;
+  return;
+}
+
+int send_response(http_response *response, const http_request *request, route_table *table, database_t *database)
 {
   response->socket_fd = request->socket_fd;
   response->content_type = get_content_type(request->url);
@@ -30,7 +92,7 @@ int send_response(http_response *response, const http_request *request, route_ta
       response->status_code = NOT_FOUND;
       break;
     case ROUTE_TARGET_HANDLER:
-      target.handler(request, response);
+      target.handler(request, response, database);
       break;
     case ROUTE_TARGET_FILE:
       serve_static(target.file, response);
