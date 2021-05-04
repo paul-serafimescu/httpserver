@@ -74,6 +74,26 @@ const char *get_status_message(int status_code)
   }
 }
 
+static const char *get_method_name(request_method method)
+{
+  switch (method) {
+    case REQUEST_GET:
+      return "GET";
+    case REQUEST_HEAD:
+      return "HEAD";
+    case REQUEST_POST:
+      return "POST";
+    case REQUEST_PUT:
+      return "PUT";
+    case REQUEST_DELETE:
+      return "DELETE";
+    case REQUEST_PATCH:
+      return "PATCH";
+    default:
+      return "UNKNOWN";
+  }
+}
+
 char *get_content_type(const char *url)
 {
   url = strrchr(url, '.');
@@ -109,22 +129,10 @@ void log_response(const http_request *request, const http_response *response)
   strftime(buffer, sizeof(buffer) - 1, "%Y-%m-%d %H:%M:%S", t);
   printf("[%s] \"%s %s HTTP/1.1\" %d %ld\n",
     buffer,
-    method_to_str(request->method),
-    request->url,
+    get_method_name(request->method),
+    request->urlfull,
     response->status_code,
     response->body_size
   );
   fflush(stdout);
-}
-
-static const char *method_to_str(request_method method)
-{
-  switch (method) {
-    case REQUEST_GET:
-      return "GET";
-    case REQUEST_POST:
-      return "POST";
-    default:
-      return "UNKNOWN";
-  }
 }
