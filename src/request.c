@@ -92,6 +92,10 @@ void clear_request(http_request *request)
     request->url = NULL;
   }
   if (request->headers) {
+    for (size_t i = 0; i < request->headers_size; i++) {
+      free(request->headers[i].key);
+      free(request->headers[i].value);
+    }
     free(request->headers);
     request->headers = NULL;
   }
