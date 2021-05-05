@@ -16,6 +16,7 @@ typedef struct {
 
 http_server *create_server(unsigned port, unsigned connections);
 int init_worker_thread(pthread_t threads[], int num_threads, route_table *table);
+int fini_worker_thread(pthread_t threads[], int num_threads);
 int run(http_server *server);
 void *handle_request(void *worker_id);
 void destroy_server(http_server *server);
