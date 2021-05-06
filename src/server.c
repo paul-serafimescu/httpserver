@@ -63,7 +63,7 @@ void *handle_request(void *input)
 
 int run(http_server *server)
 {
-  int server_fd, new_socket, flag = 0, num_threads = NUM_THREADS, option_value = 1;
+  int server_fd, new_socket, num_threads = NUM_THREADS, option_value = 1;
   pthread_t worker_threads[NUM_THREADS];
   struct sockaddr_in request_address;
   size_t addrlen = sizeof(request_address);
@@ -73,7 +73,7 @@ int run(http_server *server)
   act.sa_handler = sig_handle;
   act.sa_flags = 0;
   sigemptyset(&act.sa_mask);
-  sigaction(SIGINT, &act, NULL);
+  // sigaction(SIGINT, &act, NULL);
 
   /*
    * AF_INET is what can communicate, in this case IPv4
