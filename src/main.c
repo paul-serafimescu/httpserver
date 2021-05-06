@@ -7,6 +7,7 @@ int main(int argc, char **argv) {
 
   http_server *server = create_server(PORT, MAX_CONNECTIONS);
   run(server);
+  destroy_server(server);
 
   return 0;
 }

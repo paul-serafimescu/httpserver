@@ -7,6 +7,7 @@
 #include <string.h>
 #include <stdbool.h>
 #include <pthread.h>
+#include <signal.h>
 
 #include "server.h"
 #include "request.h"
@@ -36,15 +37,19 @@ void *handle_request(void *input)
   route_table *table = (route_table *)input;
   http_request *request = create_request();
   int socket;
-  while (true) {
-    socket = -1;
+  int running = 1;
+  while (running) {
     pthread_mutex_lock(&queue_mutex);
-    if (is_empty(request_queue))
+    while (is_empty(request_queue)) {
       pthread_cond_wait(&client_exists, &queue_mutex);
-    else
-      dequeue(request_queue, &socket);
-    pthread_mutex_unlock(&queue_mutex);
-    if (socket >= 0) {
+    }
+    dequeue(request_queue, &socket);
+    if (socket < 0) {
+      enqueue(request_queue, socket);
+      pthread_mutex_unlock(&queue_mutex);
+      running = 0;
+    } else {
+      pthread_mutex_unlock(&queue_mutex);
       if (parse_request(socket, request) == 0) {
         http_response *response = create_response();
         send_response(response, request, table);
@@ -53,6 +58,7 @@ void *handle_request(void *input)
     }
   }
   destroy_request(request);
+  return NULL;
 }
 
 int run(http_server *server)
@@ -61,6 +67,13 @@ int run(http_server *server)
   pthread_t worker_threads[NUM_THREADS];
   struct sockaddr_in request_address;
   size_t addrlen = sizeof(request_address);
+
+  void sig_handle(int signal) { (void)signal; }
+  struct sigaction act;
+  act.sa_handler = sig_handle;
+  act.sa_flags = 0;
+  sigemptyset(&act.sa_mask);
+  sigaction(SIGINT, &act, NULL);
 
   /*
    * AF_INET is what can communicate, in this case IPv4
@@ -124,17 +137,29 @@ int run(http_server *server)
 
     if((new_socket = accept(server_fd, (struct sockaddr*)&request_address, (socklen_t*)&addrlen)) < 0) {
       perror("in accept");
-      return 1;
+      break;
     }
+
     pthread_mutex_lock(&queue_mutex);
-    if (is_empty(request_queue))
-      flag = 1;
     enqueue(request_queue, new_socket);
-    if (flag)
-      pthread_cond_broadcast(&client_exists);
-    flag = 0;
+    pthread_cond_signal(&client_exists);
     pthread_mutex_unlock(&queue_mutex);
+
   }
+
+  pthread_mutex_lock(&queue_mutex);
+  enqueue(request_queue, -1);
+  pthread_cond_broadcast(&client_exists);
+  pthread_mutex_unlock(&queue_mutex);
+
+  fini_worker_thread(worker_threads, num_threads);
+
+  destroy_route_table(table);
+
+  pthread_mutex_destroy(&queue_mutex);
+  pthread_cond_destroy(&client_exists);
+  destroy_queue(request_queue);
+  return 0;
 }
 
 int init_worker_thread(pthread_t threads[], int num_threads, route_table *table)
@@ -143,6 +168,18 @@ int init_worker_thread(pthread_t threads[], int num_threads, route_table *table)
   for (i = 0; i < num_threads; i++) {
     if (pthread_create(&threads[i], NULL, handle_request, table)) {
       // idk how to handle this tbh
+      return -1;
+    }
+  }
+
+  return 0;
+}
+
+int fini_worker_thread(pthread_t threads[], int num_threads)
+{
+  int i;
+  for (i = 0; i < num_threads; i++) {
+    if (pthread_join(threads[i], NULL)) {
       return -1;
     }
   }
