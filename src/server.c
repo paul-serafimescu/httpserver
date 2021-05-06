@@ -37,19 +37,18 @@ void *handle_request(void *input)
   route_table *table = (route_table *)input;
   http_request *request = create_request();
   int socket;
-  while (true) {
-    socket = -1;
+  int running = 1;
+  while (running) {
     pthread_mutex_lock(&queue_mutex);
-    if (is_empty(request_queue)) {
+    while (is_empty(request_queue)) {
       pthread_cond_wait(&client_exists, &queue_mutex);
+    }
+    dequeue(request_queue, &socket);
+    if (socket < 0) {
+      enqueue(request_queue, socket);
       pthread_mutex_unlock(&queue_mutex);
+      running = 0;
     } else {
-      dequeue(request_queue, &socket);
-      if (socket < 0) {
-        enqueue(request_queue, socket);
-        pthread_mutex_unlock(&queue_mutex);
-        break;
-      }
       pthread_mutex_unlock(&queue_mutex);
       if (parse_request(socket, request) == 0) {
         http_response *response = create_response();
@@ -68,7 +67,6 @@ int run(http_server *server)
   pthread_t worker_threads[NUM_THREADS];
   struct sockaddr_in request_address;
   size_t addrlen = sizeof(request_address);
-
 
   sigset_t mask;
   sigfillset(&mask); // ??
@@ -142,14 +140,12 @@ int run(http_server *server)
       perror("in accept");
       break;
     }
+
     pthread_mutex_lock(&queue_mutex);
-    if (is_empty(request_queue))
-      flag = 1;
     enqueue(request_queue, new_socket);
-    if (flag)
-      pthread_cond_broadcast(&client_exists);
-    flag = 0;
+    pthread_cond_signal(&client_exists);
     pthread_mutex_unlock(&queue_mutex);
+
   }
 
   pthread_mutex_lock(&queue_mutex);
