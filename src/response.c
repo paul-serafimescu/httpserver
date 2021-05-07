@@ -26,7 +26,9 @@ http_response *create_response()
   return response;
 }
 
-int send_response(http_response *response, const http_request *request, route_table *table)
+int send_response(
+    http_response *response, const http_request *request,
+    route_table *table, database_t *database)
 {
   response->socket_fd = request->socket_fd;
   response->content_type = get_content_type(request->url);
@@ -38,7 +40,11 @@ int send_response(http_response *response, const http_request *request, route_ta
       response->status_code = NOT_FOUND;
       break;
     case ROUTE_TARGET_HANDLER:
-      target.handler(request, response);
+      if (response->status_code == OK && response->body) {
+        free(response->body);
+        response->body = NULL;
+      }
+      target.handler(request, response, database);
       break;
     case ROUTE_TARGET_FILE:
       serve_static(target.file, response);
@@ -131,10 +137,10 @@ void serve_static(FILE *file, http_response *response)
 
 void log_response(const http_request *request, const http_response *response)
 {
-  char buffer[100];
+  char buffer[20];
   time_t now = time(NULL);
   struct tm *t = localtime(&now);
-  strftime(buffer, sizeof(buffer) - 1, "%Y-%m-%d %H:%M:%S", t);
+  strftime(buffer, sizeof(buffer), "%F %T", t);
   printf("[%s] " CYAN "\"%s %s HTTP/1.1\"%s %d " YELLOW "%ld\n" NORMAL,
     buffer,
     get_method_name(request->method),
@@ -148,9 +154,9 @@ void log_response(const http_request *request, const http_response *response)
 
 void log_error(const char *msg)
 {
-  char buffer[100];
+  char buffer[20];
   time_t now = time(NULL);
   struct tm *t = localtime(&now);
-  strftime(buffer, sizeof(buffer) - 1, "%Y-%m-%d %H:%M:%S", t);
+  strftime(buffer, sizeof(buffer), "%Y-%m-%d %H:%M:%S", t);
   printf("[%s]" RED "ERROR: " NORMAL "%s\n", buffer, msg);
 }

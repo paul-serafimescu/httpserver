@@ -3,6 +3,7 @@
 
 #include "request.h"
 #include "route.h"
+#include "database.h"
 
 #define HTTP_FORMAT "HTTP/1.1 %s\r\nContent-Type: %s\r\nContent-Length: %ld\r\n\r\n"
 
@@ -19,7 +20,9 @@ typedef struct http_response {
 } http_response;
 
 http_response *create_response();
-int send_response(http_response *response, const http_request *request, route_table *table);
+int send_response(
+    http_response *response, const http_request *request,
+    route_table *table, database_t *database);
 void destroy_response(http_response *response);
 
 /* helpers */
