@@ -13,15 +13,17 @@ typedef struct {
     BLOB = SQLITE_BLOB,
     NULL_VALUE = SQLITE_NULL
   } type;
-  db_entry_t *entries;
-  size_t num_rows;
-  size_t capacity;
   char *name;
 } column_t;
 
+typedef db_entry_t *row_t;
+
 typedef struct {
-  column_t *columns;
+  row_t *rows;
+  column_t *column_info;
   size_t num_cols;
+  size_t num_rows;
+  size_t capacity;
 } sql_result_t;
 
 typedef struct {

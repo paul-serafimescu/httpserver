@@ -5,7 +5,7 @@
 #include <string.h>
 #include "database.h"
 
-static void resize_column(column_t *column);
+static void resize_result(sql_result_t *result);
 static char *str_copy_from(const char *src);
 
 database_t *create_cursor(const char *file_name)
@@ -28,7 +28,10 @@ database_t *create_cursor(const char *file_name)
 sql_result_t *init_result()
 {
   sql_result_t *result = (sql_result_t *)malloc(sizeof(sql_result_t));
-  result->num_cols = 0;
+  result->num_rows = 0;
+  result->capacity = 1;
+  result->column_info = NULL;
+  result->rows = (row_t *)malloc(result->capacity * sizeof(row_t));
   return result;
 }
 
@@ -46,42 +49,45 @@ sql_result_t *select_all(database_t *db, const char *table_name)
 
 void print_result(sql_result_t *result)
 {
-  size_t i;
-  for (i = 0 ; i < result->num_cols; i++) {
-    size_t j;
-    for (j = 0; j < result->columns[i].num_rows; j++) {
-      switch (result->columns[i].type) {
+  size_t i, j;
+  for (i = 0; i < result->num_cols; i++) {
+    printf("%s ", result->column_info[i].name);
+  }
+  printf("\n");
+  for (i = 0 ; i < result->num_rows; i++) {
+    for (j = 0; j < result->num_cols; j++) {
+      switch (result->column_info[j].type) {
         case TEXT:
-          printf("%s\n", result->columns[i].entries[j].t);
+          printf("%s ", result->rows[i][j].t);
           break;
         case REAL:
-          printf("%f\n", result->columns[i].entries[j].d);
+          printf("%f ", result->rows[i][j].d);
           break;
         case INTEGER:
-          printf("%d\n", result->columns[i].entries[j].i);
+          printf("%d ", result->rows[i][j].i);
           break;
         case NULL_VALUE:
-          printf("%s\n", "NULL");
+          printf("%s ", "NULL");
           break;
         default:
           break;
       }
     }
+    printf("\n");
   }
 }
 
 void destroy_result(sql_result_t *result)
 {
   size_t i;
-  for (i = 0; i < result->num_cols; i++) {
-    free(result->columns[i].name);
-    size_t j;
-    if (result->columns[i].type == TEXT)
-      for (j = 0; j < result->columns[i].num_rows; j++)
-        free(result->columns[i].entries[j].t);
-    free(result->columns[i].entries);
+  for (i = 0; i < result->capacity; i++) {
+    free(result->rows[i]);
   }
-  free(result->columns);
+  for (i = 0; i < result->num_cols; i++) {
+    free(result->column_info[i].name);
+  }
+  free(result->column_info);
+  free(result->rows);
   free(result);
 }
 
@@ -94,12 +100,13 @@ void destroy_cursor(database_t *db)
   free(db);
 }
 
-static void resize_column(column_t *column)
+static void resize_result(sql_result_t *result)
 {
-  if (column->num_rows == column->capacity) {
-    column->capacity *= 2;
-    column->entries = (db_entry_t *)realloc(column->entries, sizeof(db_entry_t) * column->capacity);
+  if (result->num_rows == result->capacity) {
+    result->capacity *= 2;
+    result->rows = (row_t *)realloc(result->rows, sizeof(row_t) * result->capacity);
   }
+  // printf("num rows: %zu, capacity: %zu\n", result->num_rows, result->capacity);
 }
 
 static char *str_copy_from(const char *src)
@@ -117,45 +124,49 @@ int build_result(sql_result_t *result, database_t *db, const char *query, size_t
     fprintf(stderr, "Error preparing query.\n");
     return -1;
   }
-  int row, num_columns = sqlite3_column_count(db->prepared_statement);
-  result->columns = (column_t *)malloc(sizeof(column_t) * num_columns);
+  int i, row, num_columns = sqlite3_column_count(db->prepared_statement);
   result->num_cols = num_columns;
-  int initializer;
-  for (initializer = 0; initializer < num_columns; initializer++) {
-    result->columns[initializer].num_rows = 0;
-    result->columns[initializer].capacity = 1;
-    result->columns[initializer].entries = (db_entry_t *)malloc(sizeof(db_entry_t));
-  }
+  result->column_info = (column_t *)malloc(sizeof(column_t) * num_columns);
   for (row = 0; (rc = sqlite3_step(db->prepared_statement)) == SQLITE_ROW; row++) {
-    int i;
+    result->rows[row] = (db_entry_t *)malloc(num_columns * sizeof(db_entry_t));
+    resize_result(result);
     for (i = 0; i < num_columns; i++) {
-      resize_column(&result->columns[i]);
-      if (!row) {
-        result->columns[i].name = str_copy_from(sqlite3_column_name(db->prepared_statement, i));
-      }
       int type = sqlite3_column_type(db->prepared_statement, i);
+      if (!row) {
+        result->column_info[i].name = str_copy_from(sqlite3_column_name(db->prepared_statement, i));
+        switch(type) {
+          case SQLITE_TEXT:
+            result->column_info[i].type = TEXT;
+            break;
+          case SQLITE_INTEGER:
+            result->column_info[i].type = INTEGER;
+            break;
+          case SQLITE_FLOAT:
+            result->column_info[i].type = REAL;
+            break;
+          default:
+            result->column_info[i].type = NULL_VALUE;
+            break;
+        }
+      }
       db_entry_t entry;
       switch (type) {
         case SQLITE_TEXT:;
           entry.t = str_copy_from((char *)sqlite3_column_text(db->prepared_statement, i));
-          result->columns[i].type = TEXT;
           break;
         case SQLITE_INTEGER:
           entry.i = sqlite3_column_int(db->prepared_statement, i);
-          result->columns[i].type = INTEGER;
           break;
         case SQLITE_FLOAT:
           entry.d = sqlite3_column_double(db->prepared_statement, i);
-          result->columns[i].type = REAL;
           break;
         default:
           entry.v = NULL;
-          result->columns[i].type = NULL_VALUE;
           break;
       }
-      result->columns[i].entries[row] = entry;
-      result->columns[i].num_rows++;
+      result->rows[row][i] = entry;
     }
+    result->num_rows++;
   }
   sqlite3_finalize(db->prepared_statement);
   return 0;

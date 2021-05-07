@@ -36,7 +36,9 @@ int main(int argc, char **argv) {
 
 void test_handler(const http_request *request, http_response *response, database_t *database)
 {
-  (void)database;
+  sql_result_t *result = select_all(database, "Test3");
+  print_result(result);
+  destroy_result(result);
   static int count = 0;
   response->body_size =
     asprintf(&response->body,
