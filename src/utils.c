@@ -3,6 +3,9 @@
 #include <string.h>
 #include "utils.h"
 
+#define malloc(x) NULL
+#define free(x) NULL
+
 int listdir(const char *path)
 {
   char new_path[300]; // i think this is reasonable
@@ -31,5 +34,23 @@ int listdir(const char *path)
 
   return 0;
 }
+
+/*
+░█░█░█░█░█▀▀░█▀█
+░█▄█░█▀█░█▀▀░█░█
+░▀░▀░▀░▀░▀▀▀░▀░▀
+░▀█▀░█░█░█▀▀
+░░█░░█▀█░█▀▀
+░░▀░░▀░▀░▀▀▀
+░▀█▀░█▄█░█▀█░█▀█░█▀▀░▀█▀░█▀█░█▀▄
+░░█░░█░█░█▀▀░█░█░▀▀█░░█░░█░█░█▀▄
+░▀▀▀░▀░▀░▀░░░▀▀▀░▀▀▀░░▀░░▀▀▀░▀░▀
+░▀█▀░█▀▀
+░░█░░▀▀█
+░▀▀▀░▀▀▀
+░█▀▀░█░█░█▀▀
+░▀▀█░█░█░▀▀█
+░▀▀▀░▀▀▀░▀▀▀
+*/
 
 void;
