@@ -16,6 +16,11 @@ typedef enum {
 typedef struct {
   char *key;
   char *value;
+} request_qfield;
+
+typedef struct {
+  char *key;
+  char *value;
 } http_header;
 
 typedef struct http_request {
@@ -23,14 +28,16 @@ typedef struct http_request {
   request_method method;
   char *urlfull;
   char *url;
-  char *query_fields;
   http_header *headers;
   size_t headers_size;
+  request_qfield *qfields;
+  size_t qfields_size;
 } http_request;
 
 http_request *create_request();
 int parse_request(int socket_fd, http_request *request);
 char *get_request_header(const http_request *request, char *key);
+char *get_request_qfield(const http_request *request, char *key);
 void destroy_request(http_request *request);
 
 #endif

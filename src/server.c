@@ -73,7 +73,7 @@ int run(http_server *server)
   act.sa_handler = sig_handle;
   act.sa_flags = 0;
   sigemptyset(&act.sa_mask);
-  // sigaction(SIGINT, &act, NULL);
+  sigaction(SIGINT, &act, NULL);
 
   /*
    * AF_INET is what can communicate, in this case IPv4
@@ -199,8 +199,11 @@ void test_handler(const http_request *request, http_response *response)
     free(response->body);
   }
   response->body_size =
-    asprintf(&response->body, "<p>count=%d Host=%s</p>",
-        count, get_request_header(request, "Host"));
+    asprintf(&response->body,
+        "<p>count=%d name=%s Host=%s</p>",
+        count,
+        get_request_qfield(request, "name"),
+        get_request_header(request, "Host"));
   response->status_code = OK;
   count++;
 }

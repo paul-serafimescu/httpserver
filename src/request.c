@@ -12,6 +12,7 @@ http_request *create_request()
   http_request *request = malloc(sizeof(http_request));
   request->url = NULL;
   request->urlfull = NULL;
+  request->qfields = NULL;
   request->headers = NULL;
   return request;
 }
@@ -54,9 +55,33 @@ int parse_request(int socket_fd, http_request *request)
   char *querysep = strchr(request->url, '?');
   if (querysep) {
     *querysep = '\0';
-    request->query_fields = querysep + 1;
+    request->qfields = malloc(sizeof(request_qfield));
+    request->qfields_size = 0;
+    size_t qfields_capacity = 1;
+    char *s = querysep + 1;
+    int url_ended = 0;
+    while (!url_ended && *s) {
+      char *key_end = strpbrk(s, "=");
+      if (!key_end) break;
+      *key_end = '\0';
+      size_t value_length = strcspn(key_end + 1, ";&");
+      if (!*(key_end + 1 + value_length)) {
+        url_ended = 1;
+      }
+      *(key_end + 1 + value_length) = '\0';
+      if (request->qfields_size == qfields_capacity) {
+        qfields_capacity *= 2;
+        request->qfields =
+          realloc(request->qfields, sizeof(request_qfield) * qfields_capacity);
+      }
+      request->qfields[request->qfields_size].key = s;
+      request->qfields[request->qfields_size].value = key_end + 1;
+      request->qfields_size++;
+      s = key_end + 1 + value_length + 1;
+    }
   } else {
-    request->query_fields = NULL;
+    request->qfields = NULL;
+    request->qfields_size = 0;
   }
 
   char *key;
@@ -91,6 +116,10 @@ void clear_request(http_request *request)
     free(request->url);
     request->url = NULL;
   }
+  if (request->qfields) {
+    free(request->qfields);
+    request->qfields = NULL;
+  }
   if (request->headers) {
     for (size_t i = 0; i < request->headers_size; i++) {
       free(request->headers[i].key);
@@ -112,6 +141,16 @@ char *get_request_header(const http_request *request, char *key)
   for (size_t i = 0; i < request->headers_size; i++) {
     if (!strcmp(request->headers[i].key, key)) {
       return request->headers[i].value;
+    }
+  }
+  return NULL;
+}
+
+char *get_request_qfield(const http_request *request, char *key)
+{
+  for (size_t i = 0; i < request->qfields_size; i++) {
+    if (!strcmp(request->qfields[i].key, key)) {
+      return request->qfields[i].value;
     }
   }
   return NULL;
