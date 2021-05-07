@@ -8,6 +8,14 @@
 #include "response.h"
 #include "route.h"
 
+// COLORS :D
+#define NORMAL   "\x1B[0m"
+#define RED      "\x1B[31m"
+#define GREEN    "\x1B[32m"
+#define YELLOW   "\x1B[33m"
+#define BLUE     "\x1B[34m"
+#define CYAN     "\x1B[36m"
+
 static const char *get_method_name(request_method method);
 
 http_response *create_response()
@@ -127,12 +135,22 @@ void log_response(const http_request *request, const http_response *response)
   time_t now = time(NULL);
   struct tm *t = localtime(&now);
   strftime(buffer, sizeof(buffer) - 1, "%Y-%m-%d %H:%M:%S", t);
-  printf("[%s] \"%s %s HTTP/1.1\" %d %ld\n",
+  printf("[%s] " CYAN "\"%s %s HTTP/1.1\"%s %d " YELLOW "%ld\n" NORMAL,
     buffer,
     get_method_name(request->method),
     request->urlfull,
+    response->status_code == OK ? GREEN : RED,
     response->status_code,
     response->body_size
   );
   fflush(stdout);
+}
+
+void log_error(const char *msg)
+{
+  char buffer[100];
+  time_t now = time(NULL);
+  struct tm *t = localtime(&now);
+  strftime(buffer, sizeof(buffer) - 1, "%Y-%m-%d %H:%M:%S", t);
+  printf("[%s]" RED "ERROR: " NORMAL "%s\n", buffer, msg);
 }

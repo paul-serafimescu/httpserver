@@ -27,5 +27,6 @@ void log_response(const http_request *request, const http_response *response);
 const char *get_status_message(int status_code);
 char *get_content_type(const char *url);
 void serve_static(FILE *file, http_response *response);
+void log_error(const char *msg);
 
 #endif
