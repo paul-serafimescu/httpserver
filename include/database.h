@@ -32,10 +32,18 @@ typedef struct {
   char *error_message;
 } database_t;
 
+// initializers
 database_t *create_cursor(const char *file_name);
 sql_result_t *init_result();
 int build_result(sql_result_t *result, database_t *db, const char *query, size_t query_size);
+
+// built ins
 sql_result_t *select_all(database_t *db, const char *table_name);
+sql_result_t *select_by_id(database_t *db, const char *table_name, const size_t id);
+sql_result_t *exec_sql(database_t *db, const char *stmnt);
+sql_result_t *get_column_names(database_t *db, const char *table_name);
+int insert_into_table(database_t *db, const char *table_name, const char *format, ...);
+// deallocators
 void destroy_result(sql_result_t *result);
 void destroy_cursor(database_t *db);
 void print_result(sql_result_t *result);
