@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <ctype.h>
 #include <string.h>
 #include <unistd.h>
 
@@ -14,6 +15,7 @@ http_request *create_request()
   request->urlfull = NULL;
   request->qfields = NULL;
   request->headers = NULL;
+  request->body = NULL;
   return request;
 }
 
@@ -101,6 +103,21 @@ int parse_request(int socket_fd, http_request *request)
     request->headers[request->headers_size].value = value;
     request->headers_size++;
   }
+  fgetc(socket_file);
+  fgetc(socket_file);
+
+  if (request->method == REQUEST_POST ||
+      request->method == REQUEST_PUT ||
+      request->method == REQUEST_DELETE ||
+      request->method == REQUEST_PATCH) {
+    // No i don't know what a transfer encoding is
+    char *content_length = get_request_header(request, "content-length");
+    if (content_length) {
+      request->body_size = atoi(content_length);
+      request->body = malloc(request->body_size);
+      fread(request->body, 1, request->body_size, socket_file);
+    }
+  }
 
   fclose(socket_file);
   return 0;
@@ -128,6 +145,10 @@ void clear_request(http_request *request)
     free(request->headers);
     request->headers = NULL;
   }
+  if (request->body) {
+    free(request->body);
+    request->body = NULL;
+  }
 }
 
 void destroy_request(http_request *request)
@@ -139,7 +160,12 @@ void destroy_request(http_request *request)
 char *get_request_header(const http_request *request, char *key)
 {
   for (size_t i = 0; i < request->headers_size; i++) {
-    if (!strcmp(request->headers[i].key, key)) {
+    size_t c = 0;
+    while (request->headers[i].key[c] &&
+           tolower(request->headers[i].key[c]) == tolower(key[c])) {
+      c++;
+    }
+    if (!request->headers[i].key[c] && !key[c]) {
       return request->headers[i].value;
     }
   }

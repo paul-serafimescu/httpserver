@@ -32,6 +32,8 @@ typedef struct http_request {
   size_t headers_size;
   request_qfield *qfields;
   size_t qfields_size;
+  char *body;
+  size_t body_size;
 } http_request;
 
 http_request *create_request();

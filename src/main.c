@@ -38,12 +38,11 @@ void test_handler(const http_request *request, http_response *response, database
 {
   (void)database;
   static int count = 0;
+  char *name = get_request_qfield(request, "name");
+  char *host = get_request_header(request, "host");
   response->body_size =
-    asprintf(&response->body,
-        "<p>count=%d name=%s Host=%s</p>",
-        count,
-        get_request_qfield(request, "name"),
-        get_request_header(request, "Host"));
+    asprintf(&response->body, "<p>count=%d name=%s Host=%s</p>",
+        count, name, host);
   response->status_code = OK;
   count++;
 }
