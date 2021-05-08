@@ -6,7 +6,7 @@
 #include <stdarg.h>
 #include "database.h"
 
-#define HANDLE_QUERYSET_ERR do { fprintf(stderr, "Error building queryset result.\n"); } while (0)
+#define PRINT_ERR(error_msg) { fprintf(stderr, "[SQL error] %s\n", error_msg); }
 
 static void resize_result(sql_result_t *result);
 static char *str_copy_from(const char *src);
@@ -44,7 +44,7 @@ sql_result_t *select_all(database_t *db, const char *table_name)
   char *query;
   size_t query_size = asprintf(&query, "SELECT * FROM %s", table_name);
   if (build_result(result, db, query, query_size) < 0) {
-    HANDLE_QUERYSET_ERR;
+    PRINT_ERR(db->error_message);
   }
   free(query);
   return result;
@@ -56,7 +56,7 @@ sql_result_t *select_by_id(database_t *db, const char *table_name, const size_t 
   char *query;
   size_t query_size = asprintf(&query, "SELECT * FROM %s WHERE rowid = %zu", table_name, id);
   if (build_result(result, db, query, query_size) < 0) {
-    HANDLE_QUERYSET_ERR;
+    PRINT_ERR(db->error_message);
   }
   free(query);
   return result;
@@ -72,7 +72,7 @@ int insert_into_table(database_t *db, const char *table_name, const char *format
   va_start(args, frmt);
   vasprintf(&query, frmt, args);
   if (sqlite3_exec(db->db, query, 0, 0, &db->error_message) != SQLITE_OK) {
-    fprintf(stderr, "SQL error: %s", db->error_message);
+    PRINT_ERR(db->error_message);
     return -1;
   }
   free(frmt);
@@ -84,7 +84,7 @@ sql_result_t *exec_sql(database_t *db, const char *stmnt)
 {
   sql_result_t *result = init_result();
   if (build_result(result, db, stmnt, strlen(stmnt) + 1) < 0) {
-    HANDLE_QUERYSET_ERR;
+    PRINT_ERR(db->error_message);
   }
   return result;
 }
@@ -136,7 +136,8 @@ void destroy_result(sql_result_t *result)
 void destroy_cursor(database_t *db)
 {
   if (sqlite3_close_v2(db->db) != SQLITE_OK) {
-    printf("whoops, SQLite3 broke!\n");
+    db->error_message = (char *)sqlite3_errmsg(db->db);
+    PRINT_ERR(db->error_message);
   }
   free(db->error_message);
   free(db);
@@ -148,7 +149,6 @@ static void resize_result(sql_result_t *result)
     result->capacity *= 2;
     result->rows = (row_t *)realloc(result->rows, sizeof(row_t) * result->capacity);
   }
-  // printf("num rows: %zu, capacity: %zu\n", result->num_rows, result->capacity);
 }
 
 static char *str_copy_from(const char *src)
@@ -172,7 +172,7 @@ int build_result(sql_result_t *result, database_t *db, const char *query, size_t
 {
   int rc = sqlite3_prepare_v2(db->db, query, query_size, &db->prepared_statement, NULL);
   if (rc != SQLITE_OK) {
-    fprintf(stderr, "Error preparing query.\n");
+    db->error_message = (char *)sqlite3_errmsg(db->db);
     return -1;
   }
   int i, row, num_columns = sqlite3_column_count(db->prepared_statement);
