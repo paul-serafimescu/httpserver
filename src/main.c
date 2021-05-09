@@ -36,10 +36,14 @@ int main(int argc, char **argv) {
 
 void test_handler(const http_request *request, http_response *response, database_t *database)
 {
-  (void)database;
   static int count = 0;
   char *name = get_request_qfield(request, "name");
   char *host = get_request_header(request, "host");
+  sql_result_t *r = select_all(database, "Test3");
+  print_result(r);
+  destroy_result(r);
+  insert_into_table(database, "Test3", "mary", 0, 301);
+  insert_into_table(database, "Test4", 1234);
   response->body_size =
     asprintf(&response->body, "<p>count=%d name=%s Host=%s</p>",
         count, name, host);

@@ -42,7 +42,7 @@ sql_result_t *select_all(database_t *db, const char *table_name);
 sql_result_t *select_by_id(database_t *db, const char *table_name, const size_t id);
 sql_result_t *exec_sql(database_t *db, const char *stmnt);
 sql_result_t *get_column_names(database_t *db, const char *table_name);
-int insert_into_table(database_t *db, const char *table_name, const char *format, ...);
+int insert_into_table(database_t *db, const char *table_name, ...);
 // deallocators
 void destroy_result(sql_result_t *result);
 void destroy_cursor(database_t *db);
