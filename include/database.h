@@ -40,7 +40,7 @@ int build_result(sql_result_t *result, database_t *db, const char *query, size_t
 // built ins
 sql_result_t *select_all(database_t *db, const char *table_name);
 sql_result_t *select_by_id(database_t *db, const char *table_name, const size_t id);
-sql_result_t *exec_sql(database_t *db, const char *stmnt);
+sql_result_t *exec_sql(database_t *db, const char *stmnt, size_t stmnt_size);
 sql_result_t *get_column_names(database_t *db, const char *table_name);
 int insert_into_table(database_t *db, const char *table_name, ...);
 // deallocators

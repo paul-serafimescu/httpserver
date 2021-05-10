@@ -9,7 +9,6 @@
 #define PRINT_ERR(error_msg) { fprintf(stderr, "[SQL error] %s\n", error_msg); }
 
 static void resize_result(sql_result_t *result);
-static char *str_copy_from(const char *src);
 
 database_t *create_cursor(const char *file_name)
 {
@@ -38,24 +37,18 @@ sql_result_t *init_result()
 
 sql_result_t *select_all(database_t *db, const char *table_name)
 {
-  sql_result_t *result = init_result();
   char *query;
   size_t query_size = asprintf(&query, "SELECT * FROM %s", table_name);
-  if (build_result(result, db, query, query_size) < 0) {
-    PRINT_ERR(db->error_message);
-  }
+  sql_result_t *result = exec_sql(db, query, query_size + 1);
   free(query);
   return result;
 }
 
 sql_result_t *select_by_id(database_t *db, const char *table_name, const size_t id)
 {
-  sql_result_t *result = init_result();
   char *query;
   size_t query_size = asprintf(&query, "SELECT * FROM %s WHERE rowid = %zu", table_name, id);
-  if (build_result(result, db, query, query_size) < 0) {
-    PRINT_ERR(db->error_message);
-  }
+  sql_result_t *result = exec_sql(db, query, query_size + 1);
   free(query);
   return result;
 }
@@ -66,7 +59,7 @@ int insert_into_table(database_t *db, const char *table_name, ...)
   sql_result_t *columns = get_column_names(db, table_name);
   size_t table_length = strlen(table_name);
 
-  char *query = malloc(table_length + columns->num_rows * 2 + 23);
+  char *query = malloc(table_length + columns->num_rows * 2 + 22);
   char *s = query;
   strcpy(s, "INSERT INTO ");
   s += 12;
@@ -78,17 +71,16 @@ int insert_into_table(database_t *db, const char *table_name, ...)
     strcpy(s, ",?");
     s += 2;
   }
-  strcpy(s, ");");
+  strcpy(s, ")");
 
   sqlite3_prepare_v2(db->db,
-      query, table_length + columns->num_rows * 2 + 23,
+      query, table_length + columns->num_rows * 2 + 22,
       &db->prepared_statement, NULL);
 
   va_list args;
   va_start(args, table_name);
   int argnum = 1;
   for (size_t columnnum = 0; columnnum < columns->num_rows; columnnum++) {
-    printf("binding: %s (%s)\n", columns->rows[columnnum][0].t, columns->rows[columnnum][1].t);
     char *typename = columns->rows[columnnum][1].t;
     if (!strcmp(typename, "TEXT")) {
       char *t = va_arg(args, char *);
@@ -123,10 +115,13 @@ int insert_into_table(database_t *db, const char *table_name, ...)
   return sqlite3_last_insert_rowid(db->db);
 }
 
-sql_result_t *exec_sql(database_t *db, const char *stmnt)
+sql_result_t *exec_sql(database_t *db, const char *stmnt, size_t stmnt_size)
 {
+  if (stmnt_size == 0) {
+    stmnt_size = strlen(stmnt) + 1;
+  }
   sql_result_t *result = init_result();
-  if (build_result(result, db, stmnt, strlen(stmnt) + 1) < 0) {
+  if (build_result(result, db, stmnt, stmnt_size) < 0) {
     PRINT_ERR(db->error_message);
   }
   return result;
@@ -200,19 +195,12 @@ static void resize_result(sql_result_t *result)
   }
 }
 
-static char *str_copy_from(const char *src)
-{
-  size_t src_length = strlen(src) + 1;
-  char *dest = (char *)malloc(src_length);
-  strncpy(dest, src, src_length);
-  return dest;
-}
-
 sql_result_t *get_column_names(database_t *db, const char *table_name)
 {
   char *query;
-  asprintf(&query, "SELECT name, type FROM pragma_table_info('%s')", table_name);
-  sql_result_t *column_metadata = exec_sql(db, query);
+  size_t query_size =
+    asprintf(&query, "SELECT name, type FROM pragma_table_info('%s')", table_name);
+  sql_result_t *column_metadata = exec_sql(db, query, query_size + 1);
   free(query);
   return column_metadata;
 }
@@ -233,7 +221,7 @@ int build_result(sql_result_t *result, database_t *db, const char *query, size_t
     for (i = 0; i < num_columns; i++) {
       int type = sqlite3_column_type(db->prepared_statement, i);
       if (!row) {
-        result->column_info[i].name = str_copy_from(sqlite3_column_name(db->prepared_statement, i));
+        result->column_info[i].name = strdup(sqlite3_column_name(db->prepared_statement, i));
         switch (type) {
           case SQLITE_TEXT:
             result->column_info[i].type = TEXT;
@@ -251,8 +239,8 @@ int build_result(sql_result_t *result, database_t *db, const char *query, size_t
       }
       db_entry_t entry;
       switch (type) {
-        case SQLITE_TEXT:;
-          entry.t = str_copy_from((char *)sqlite3_column_text(db->prepared_statement, i));
+        case SQLITE_TEXT:
+          entry.t = strdup((char *)sqlite3_column_text(db->prepared_statement, i));
           break;
         case SQLITE_INTEGER:
           entry.i = sqlite3_column_int(db->prepared_statement, i);
