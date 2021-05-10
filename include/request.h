@@ -11,6 +11,7 @@ typedef enum {
   // REQUEST_CONNECT,
   // REQUEST_OPTIONS,
   // REQUEST_TRACE,
+  REQUEST_METHODS // Total number
 } request_method;
 
 typedef struct {
@@ -21,14 +22,14 @@ typedef struct {
 typedef struct {
   char *key;
   char *value;
-} http_header;
+} request_header;
 
 typedef struct http_request {
   int socket_fd;
   request_method method;
   char *urlfull;
   char *url;
-  http_header *headers;
+  request_header *headers;
   size_t headers_size;
   request_qfield *qfields;
   size_t qfields_size;
@@ -41,5 +42,7 @@ int parse_request(int socket_fd, http_request *request);
 char *get_request_header(const http_request *request, char *key);
 char *get_request_qfield(const http_request *request, char *key);
 void destroy_request(http_request *request);
+
+const char *get_method_name(request_method method);
 
 #endif

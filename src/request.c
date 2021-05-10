@@ -25,30 +25,26 @@ int parse_request(int socket_fd, http_request *request)
 
   request->socket_fd = socket_fd;
 
-  FILE *socket_file = fdopen(dup(socket_fd), "rb");
+  FILE *socket_file = fdopen(dup(request->socket_fd), "rb");
   if (socket_file == NULL) {
     perror("fdopen");
     return -1;
   }
+
   char method_str[10];
   if (fscanf(socket_file, "%9s %ms HTTP/1.1\r\n", method_str, &request->urlfull) != 2) {
     fclose(socket_file);
     return -1;
   }
 
-  if (!strcmp(method_str, "GET")) {
-    request->method = REQUEST_GET;
-  } else if (!strcmp(method_str, "HEAD")) {
-    request->method = REQUEST_HEAD;
-  } else if (!strcmp(method_str, "POST")) {
-    request->method = REQUEST_POST;
-  } else if (!strcmp(method_str, "PUT")) {
-    request->method = REQUEST_PUT;
-  } else if (!strcmp(method_str, "DELETE")) {
-    request->method = REQUEST_DELETE;
-  } else if (!strcmp(method_str, "PATCH")) {
-    request->method = REQUEST_PATCH;
-  } else {
+  request->method = -1;
+  for (size_t i = 0; i < REQUEST_METHODS; i++) {
+    if (!strcmp(method_str, get_method_name(i))) {
+      request->method = i;
+      break;
+    }
+  }
+  if (request->method == (request_method)-1) {
     fclose(socket_file);
     return -1;
   }
@@ -88,7 +84,7 @@ int parse_request(int socket_fd, http_request *request)
 
   char *key;
   char *value;
-  request->headers = malloc(sizeof(http_header));
+  request->headers = malloc(sizeof(request_header));
   request->headers_size = 0;
   size_t headers_capacity = 1;
   while (fscanf(socket_file, "%m[^\r:]: %m[^\r]", &key, &value) == 2) {
@@ -97,7 +93,7 @@ int parse_request(int socket_fd, http_request *request)
     if (request->headers_size == headers_capacity) {
       headers_capacity *= 2;
       request->headers =
-        realloc(request->headers, sizeof(http_header) * headers_capacity);
+        realloc(request->headers, sizeof(request_header) * headers_capacity);
     }
     request->headers[request->headers_size].key = key;
     request->headers[request->headers_size].value = value;
@@ -181,3 +177,24 @@ char *get_request_qfield(const http_request *request, char *key)
   }
   return NULL;
 }
+
+const char *get_method_name(request_method method)
+{
+  switch (method) {
+    case REQUEST_GET:
+      return "GET";
+    case REQUEST_HEAD:
+      return "HEAD";
+    case REQUEST_POST:
+      return "POST";
+    case REQUEST_PUT:
+      return "PUT";
+    case REQUEST_DELETE:
+      return "DELETE";
+    case REQUEST_PATCH:
+      return "PATCH";
+    default:
+      return NULL;
+  }
+}
+

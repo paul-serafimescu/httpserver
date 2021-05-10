@@ -7,6 +7,11 @@
 
 #define HTTP_FORMAT "HTTP/1.1 %s\r\nContent-Type: %s\r\nContent-Length: %ld\r\n\r\n"
 
+typedef struct {
+  char *key;
+  char *value;
+} response_header;
+
 typedef struct http_response {
   int socket_fd;
   enum {

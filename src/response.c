@@ -16,8 +16,6 @@
 #define BLUE     "\x1B[34m"
 #define CYAN     "\x1B[36m"
 
-static const char *get_method_name(request_method method);
-
 http_response *create_response()
 {
   http_response *response = malloc(sizeof(http_response));
@@ -31,6 +29,8 @@ int send_response(
     route_table *table, database_t *database)
 {
   response->socket_fd = request->socket_fd;
+  FILE *socket_file = fdopen(dup(response->socket_fd), "wb");
+
   response->content_type = get_content_type(request->url);
   route_target target = route_url(table, request->url);
   switch (target.type) {
@@ -52,16 +52,13 @@ int send_response(
       break;
   }
   const char *status_message = get_status_message(response->status_code);
-  char *response_header;
-  int response_header_length = asprintf(&response_header, HTTP_FORMAT,
+  fprintf(socket_file, HTTP_FORMAT,
     status_message,
     response->content_type,
     response->body_size);
-  write(response->socket_fd, response_header, response_header_length);
-  write(response->socket_fd, response->body, response->body_size);
+  fwrite(response->body, response->body_size, 1, socket_file);
   log_response(request, response);
-  close(response->socket_fd);
-  free(response_header);
+  fclose(socket_file);
 
   return 0;
 }
@@ -85,26 +82,6 @@ const char *get_status_message(int status_code)
       return "400 Bad Request";
     default:
       return "404 Not Found";
-  }
-}
-
-static const char *get_method_name(request_method method)
-{
-  switch (method) {
-    case REQUEST_GET:
-      return "GET";
-    case REQUEST_HEAD:
-      return "HEAD";
-    case REQUEST_POST:
-      return "POST";
-    case REQUEST_PUT:
-      return "PUT";
-    case REQUEST_DELETE:
-      return "DELETE";
-    case REQUEST_PATCH:
-      return "PATCH";
-    default:
-      return "UNKNOWN";
   }
 }
 
