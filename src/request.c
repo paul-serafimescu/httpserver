@@ -14,7 +14,7 @@ http_request *create_request()
   request->url = NULL;
   request->urlfull = NULL;
   request->qfields = NULL;
-  request->headers = NULL;
+  request->headers.headers = NULL;
   request->body = NULL;
   return request;
 }
@@ -84,20 +84,13 @@ int parse_request(int socket_fd, http_request *request)
 
   char *key;
   char *value;
-  request->headers = malloc(sizeof(request_header));
-  request->headers_size = 0;
-  size_t headers_capacity = 1;
+  request->headers.headers = malloc(sizeof(http_header));
+  request->headers.size = 0;
+  request->headers.capacity = 1;
   while (fscanf(socket_file, "%m[^\r:]: %m[^\r]", &key, &value) == 2) {
     fgetc(socket_file);
     fgetc(socket_file);
-    if (request->headers_size == headers_capacity) {
-      headers_capacity *= 2;
-      request->headers =
-        realloc(request->headers, sizeof(request_header) * headers_capacity);
-    }
-    request->headers[request->headers_size].key = key;
-    request->headers[request->headers_size].value = value;
-    request->headers_size++;
+    set_header(&request->headers, key, value);
   }
   fgetc(socket_file);
   fgetc(socket_file);
@@ -107,7 +100,7 @@ int parse_request(int socket_fd, http_request *request)
       request->method == REQUEST_DELETE ||
       request->method == REQUEST_PATCH) {
     // No i don't know what a transfer encoding is
-    char *content_length = get_request_header(request, "content-length");
+    char *content_length = get_header(&request->headers, "content-length");
     if (content_length) {
       request->body_size = atoi(content_length);
       request->body = malloc(request->body_size);
@@ -133,13 +126,13 @@ void clear_request(http_request *request)
     free(request->qfields);
     request->qfields = NULL;
   }
-  if (request->headers) {
-    for (size_t i = 0; i < request->headers_size; i++) {
-      free(request->headers[i].key);
-      free(request->headers[i].value);
+  if (request->headers.headers) {
+    for (size_t i = 0; i < request->headers.size; i++) {
+      free(request->headers.headers[i].key);
+      free(request->headers.headers[i].value);
     }
-    free(request->headers);
-    request->headers = NULL;
+    free(request->headers.headers);
+    request->headers.headers = NULL;
   }
   if (request->body) {
     free(request->body);
@@ -151,21 +144,6 @@ void destroy_request(http_request *request)
 {
   clear_request(request);
   free(request);
-}
-
-char *get_request_header(const http_request *request, char *key)
-{
-  for (size_t i = 0; i < request->headers_size; i++) {
-    size_t c = 0;
-    while (request->headers[i].key[c] &&
-           tolower(request->headers[i].key[c]) == tolower(key[c])) {
-      c++;
-    }
-    if (!request->headers[i].key[c] && !key[c]) {
-      return request->headers[i].value;
-    }
-  }
-  return NULL;
 }
 
 char *get_request_qfield(const http_request *request, char *key)

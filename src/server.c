@@ -58,6 +58,7 @@ void *handle_request(void *input)
         send_response(response, request, server->table, server->database);
         destroy_response(response);
       }
+      close(socket);
     }
   }
   destroy_request(request);

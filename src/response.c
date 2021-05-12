@@ -40,10 +40,6 @@ int send_response(
       response->status_code = NOT_FOUND;
       break;
     case ROUTE_TARGET_HANDLER:
-      if (response->status_code == OK && response->body) {
-        free(response->body);
-        response->body = NULL;
-      }
       target.handler(request, response, database);
       break;
     case ROUTE_TARGET_FILE:

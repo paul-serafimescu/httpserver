@@ -4,6 +4,7 @@
 #include "request.h"
 #include "route.h"
 #include "database.h"
+#include "header.h"
 
 #define HTTP_FORMAT "HTTP/1.1 %s\r\nContent-Type: %s\r\nContent-Length: %ld\r\n\r\n"
 
@@ -19,9 +20,10 @@ typedef struct http_response {
     NOT_FOUND = 404,
     BAD_REQUEST = 400
   } status_code;
-  char *content_type;
+  http_header *headers;
   char *body;
-  long body_size;
+  size_t body_size;
+  char *content_type;
 } http_response;
 
 http_response *create_response();
@@ -34,6 +36,8 @@ void destroy_response(http_response *response);
 void log_response(const http_request *request, const http_response *response);
 const char *get_status_message(int status_code);
 char *get_content_type(const char *url);
+char *get_response_header(const http_response *response, char *key);
+void set_response_header(const http_response *response, char *key, char *value);
 void serve_static(FILE *file, http_response *response);
 void log_error(const char *msg);
 

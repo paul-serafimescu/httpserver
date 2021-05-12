@@ -1,6 +1,8 @@
 #ifndef REQUEST_H
 #define REQUEST_H
 
+#include "header.h"
+
 typedef enum {
   REQUEST_GET,
   REQUEST_HEAD,
@@ -19,18 +21,12 @@ typedef struct {
   char *value;
 } request_qfield;
 
-typedef struct {
-  char *key;
-  char *value;
-} request_header;
-
 typedef struct http_request {
   int socket_fd;
   request_method method;
   char *urlfull;
   char *url;
-  request_header *headers;
-  size_t headers_size;
+  http_headers headers;
   request_qfield *qfields;
   size_t qfields_size;
   char *body;
@@ -39,7 +35,6 @@ typedef struct http_request {
 
 http_request *create_request();
 int parse_request(int socket_fd, http_request *request);
-char *get_request_header(const http_request *request, char *key);
 char *get_request_qfield(const http_request *request, char *key);
 void destroy_request(http_request *request);
 

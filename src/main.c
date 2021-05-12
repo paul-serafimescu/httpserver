@@ -38,7 +38,7 @@ void test_handler(const http_request *request, http_response *response, database
 {
   static int count = 0;
   char *name = get_request_qfield(request, "name");
-  char *host = get_request_header(request, "host");
+  char *host = get_header(&request->headers, "host");
   sql_result_t *r = select_all(database, "Test3");
   print_result(r);
   destroy_result(r);
