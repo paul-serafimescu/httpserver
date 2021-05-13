@@ -42,8 +42,8 @@ void test_handler(const http_request *request, http_response *response, database
   char *host = get_header(&request->headers, "host");
   sql_result_t *r = select_by_id(database, "Test3", 1);
   char *json_result = json_stringify(r);
-  printf("%s\n", json_result);
-  // print_result(r);
+  free(json_result);
+  print_result(r);
   destroy_result(r);
   response->body_size =
     asprintf(&response->body, "<p>count=%d name=%s Host=%s</p>",
