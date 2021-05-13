@@ -7,9 +7,9 @@ typedef struct {
 } http_header;
 
 typedef struct {
-	http_header *headers;
-	size_t size;
-	size_t capacity;
+  http_header *headers;
+  size_t size;
+  size_t capacity;
 } http_headers;
 
 /*

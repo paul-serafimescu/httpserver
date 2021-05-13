@@ -39,11 +39,16 @@ void test_handler(const http_request *request, http_response *response, database
   static int count = 0;
   char *name = get_request_qfield(request, "name");
   char *host = get_header(&request->headers, "host");
-  sql_result_t *r = select_all(database, "Test3");
+  /* sql_result_t *r = select_all(database, "Test3");
   print_result(r);
   destroy_result(r);
   insert_into_table(database, "Test3", "mary", 0, 301);
-  insert_into_table(database, "Test4", 1234);
+  insert_into_table(database, "Test4", 1234); */
+  if (name) {
+    set_header(&response->headers, "Set-Cookie", name);
+  } else {
+    name = get_header(&request->headers, "Cookie");
+  }
   response->body_size =
     asprintf(&response->body, "<p>count=%d name=%s Host=%s</p>",
         count, name, host);

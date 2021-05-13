@@ -6,8 +6,6 @@
 #include "database.h"
 #include "header.h"
 
-#define HTTP_FORMAT "HTTP/1.1 %s\r\nContent-Type: %s\r\nContent-Length: %ld\r\n\r\n"
-
 typedef struct {
   char *key;
   char *value;
@@ -20,7 +18,7 @@ typedef struct http_response {
     NOT_FOUND = 404,
     BAD_REQUEST = 400
   } status_code;
-  http_header *headers;
+  http_headers headers;
   char *body;
   size_t body_size;
   char *content_type;

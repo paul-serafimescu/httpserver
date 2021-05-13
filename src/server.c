@@ -39,6 +39,7 @@ void *handle_request(void *input)
 {
   http_server *server = (http_server *)input;
   http_request *request = create_request();
+  http_response *response = create_response();
   int socket;
   int running = 1;
   while (running) {
@@ -54,13 +55,12 @@ void *handle_request(void *input)
     } else {
       pthread_mutex_unlock(&queue_mutex);
       if (parse_request(socket, request) == 0) {
-        http_response *response = create_response();
         send_response(response, request, server->table, server->database);
-        destroy_response(response);
       }
       close(socket);
     }
   }
+  destroy_response(response);
   destroy_request(request);
   return NULL;
 }
