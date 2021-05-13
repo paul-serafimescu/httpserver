@@ -4,6 +4,7 @@
 #include "response.h"
 #include "route.h"
 #include "database.h"
+#include "json.h"
 
 #define PORT 8000
 #define MAX_CONNECTIONS 10
@@ -39,11 +40,11 @@ void test_handler(const http_request *request, http_response *response, database
   static int count = 0;
   char *name = get_request_qfield(request, "name");
   char *host = get_header(&request->headers, "host");
-  sql_result_t *r = select_all(database, "Test3");
-  print_result(r);
+  sql_result_t *r = select_by_id(database, "Test3", 1);
+  char *json_result = json_stringify(r);
+  printf("%s\n", json_result);
+  // print_result(r);
   destroy_result(r);
-  insert_into_table(database, "Test3", "mary", 0, 301);
-  insert_into_table(database, "Test4", 1234);
   response->body_size =
     asprintf(&response->body, "<p>count=%d name=%s Host=%s</p>",
         count, name, host);

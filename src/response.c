@@ -18,7 +18,7 @@
 
 http_response *create_response()
 {
-  http_response *response = malloc(sizeof(http_response));
+  http_response *response = (http_response *)malloc(sizeof(http_response));
   response->body = NULL;
   response->status_code = OK;
   return response;
@@ -102,7 +102,7 @@ void serve_static(FILE *file, http_response *response)
   rewind(file);
   response->body_size = fsize;
 
-  response->body = malloc(fsize + 1);
+  response->body = (char *)malloc(fsize + 1);
   fread(response->body, 1, fsize, file);
   response->body[fsize] = 0;
   response->status_code = OK;

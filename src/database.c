@@ -59,7 +59,7 @@ int insert_into_table(database_t *db, const char *table_name, ...)
   sql_result_t *columns = get_column_names(db, table_name);
   size_t table_length = strlen(table_name);
 
-  char *query = malloc(table_length + columns->num_rows * 2 + 22);
+  char *query = (char *)malloc(table_length + columns->num_rows * 2 + 22);
   char *s = query;
   strcpy(s, "INSERT INTO ");
   s += 12;
@@ -126,6 +126,25 @@ sql_result_t *exec_sql(database_t *db, const char *stmnt, size_t stmnt_size)
   }
   return result;
 }
+
+int delete_by_id(database_t *db, const char *table_name, const size_t id)
+{
+  char *query;
+  signed char return_value = 0;
+  asprintf(&query, "DELETE FROM %s WHERE rowid = %zu", table_name, id);
+  if (sqlite3_exec(db->db, query, 0, 0, &db->error_message)) {
+    PRINT_ERR(db->error_message);
+    return_value = -1;
+  }
+  free(query);
+  return return_value;
+}
+
+/* int update_by_id(database_t *db, const char *table_name, const size_t id)
+{
+  char *query;
+  asprintf(&query, "UPDATE %s SET nyaa~ WHERE rowid = %zu", table_name, id);
+} */
 
 void print_result(sql_result_t *result)
 {
