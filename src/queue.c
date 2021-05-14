@@ -5,7 +5,7 @@
 /* creates queue and initializes head and tail with NULL */
 queue_t *create_queue(void)
 {
-  queue_t *queue = (queue_t *)malloc(sizeof(queue_t));
+  queue_t *queue = malloc(sizeof(queue_t));
   queue->head = NULL;
   queue->tail = NULL;
   return queue;
@@ -21,13 +21,13 @@ int is_empty(queue_t *queue)
 int enqueue(queue_t *queue, int data)
 {
   if (queue->head == NULL) {
-    queue->head = (struct node *)malloc(sizeof(struct node));
+    queue->head = malloc(sizeof(struct node));
     if (queue->head == NULL) return -1;
     queue->head->data = data;
     queue->head->next = NULL;
     queue->tail = queue->head;
   } else {
-    struct node *new_node = (struct node *)malloc(sizeof(struct node));
+    struct node *new_node = malloc(sizeof(struct node));
     new_node->data = data;
     new_node->next = NULL;
     queue->tail->next = new_node;

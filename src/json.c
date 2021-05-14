@@ -8,13 +8,13 @@
 static void resize(char **str, size_t *capacity)
 {
   *capacity *= 2;
-  *str = (char *)realloc(*str, *capacity);
+  *str = realloc(*str, *capacity);
 }
 
 static char *serialize_row(column_t *fields, row_t row, size_t field_count)
 {
   size_t i, size = 1, capacity = 7 * field_count, add_mem;
-  char *formatted_json = (char *)malloc(capacity);
+  char *formatted_json = malloc(capacity);
   strncpy(formatted_json, "{", 2);
   for (i = 0; i < field_count; i++) {
     size_t field_name_len = strlen(fields[i].name);

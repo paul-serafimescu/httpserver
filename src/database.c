@@ -12,7 +12,7 @@ static void resize_result(sql_result_t *result);
 
 database_t *create_cursor(const char *file_name)
 {
-  database_t *db = (database_t *)malloc(sizeof(database_t));
+  database_t *db = malloc(sizeof(database_t));
   int rc = sqlite3_open(file_name, &db->db);
   if (rc != SQLITE_OK) {
     fprintf(stderr, "Cannot open database: %s\n", sqlite3_errmsg(db->db));
@@ -27,11 +27,11 @@ database_t *create_cursor(const char *file_name)
 
 sql_result_t *init_result()
 {
-  sql_result_t *result = (sql_result_t *)malloc(sizeof(sql_result_t));
+  sql_result_t *result = malloc(sizeof(sql_result_t));
   result->num_rows = 0;
   result->capacity = 1;
   result->column_info = NULL;
-  result->rows = (row_t *)malloc(result->capacity * sizeof(row_t));
+  result->rows = malloc(result->capacity * sizeof(row_t));
   return result;
 }
 
@@ -53,13 +53,12 @@ sql_result_t *select_by_id(database_t *db, const char *table_name, const size_t 
   return result;
 }
 
-// returns -1 on failure, last added row id on success
 int insert_into_table(database_t *db, const char *table_name, ...)
 {
   sql_result_t *columns = get_column_names(db, table_name);
   size_t table_length = strlen(table_name);
 
-  char *query = (char *)malloc(table_length + columns->num_rows * 2 + 22);
+  char *query = malloc(table_length + columns->num_rows * 2 + 22);
   char *s = query;
   strcpy(s, "INSERT INTO ");
   s += 12;
@@ -123,6 +122,7 @@ sql_result_t *exec_sql(database_t *db, const char *stmnt, size_t stmnt_size)
   sql_result_t *result = init_result();
   if (build_result(result, db, stmnt, stmnt_size) < 0) {
     PRINT_ERR(db->error_message);
+    return NULL;
   }
   return result;
 }
@@ -210,7 +210,7 @@ static void resize_result(sql_result_t *result)
 {
   if (result->num_rows == result->capacity) {
     result->capacity *= 2;
-    result->rows = (row_t *)realloc(result->rows, sizeof(row_t) * result->capacity);
+    result->rows = realloc(result->rows, sizeof(row_t) * result->capacity);
   }
 }
 
@@ -233,10 +233,10 @@ int build_result(sql_result_t *result, database_t *db, const char *query, size_t
   }
   int i, row, num_columns = sqlite3_column_count(db->prepared_statement);
   result->num_cols = num_columns;
-  result->column_info = (column_t *)malloc(sizeof(column_t) * num_columns);
+  result->column_info = malloc(sizeof(column_t) * num_columns);
   for (row = 0; (rc = sqlite3_step(db->prepared_statement)) == SQLITE_ROW; row++) {
     resize_result(result);
-    result->rows[row] = (db_entry_t *)malloc(num_columns * sizeof(db_entry_t));
+    result->rows[row] = malloc(num_columns * sizeof(db_entry_t));
     for (i = 0; i < num_columns; i++) {
       int type = sqlite3_column_type(db->prepared_statement, i);
       if (!row) {
