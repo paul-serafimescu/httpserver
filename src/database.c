@@ -38,7 +38,7 @@ sql_result_t *init_result()
 sql_result_t *select_all(database_t *db, const char *table_name)
 {
   char *query;
-  size_t query_size = asprintf(&query, "SELECT * FROM %s", table_name);
+  size_t query_size = asprintf(&query, "SELECT rowid AS id, * FROM %s", table_name);
   sql_result_t *result = exec_sql(db, query, query_size + 1);
   free(query);
   return result;
@@ -47,7 +47,7 @@ sql_result_t *select_all(database_t *db, const char *table_name)
 sql_result_t *select_by_id(database_t *db, const char *table_name, const size_t id)
 {
   char *query;
-  size_t query_size = asprintf(&query, "SELECT * FROM %s WHERE rowid = %zu", table_name, id);
+  size_t query_size = asprintf(&query, "SELECT rowid AS id, * FROM %s WHERE rowid = %zu", table_name, id);
   sql_result_t *result = exec_sql(db, query, query_size + 1);
   free(query);
   return result;

@@ -40,9 +40,11 @@ void test_handler(const http_request *request, http_response *response, database
   static int count = 0;
   char *name = get_request_qfield(request, "name");
   char *host = get_header(&request->headers, "host");
-  sql_result_t *r = select_by_id(database, "Test3", 1);
-  char *json_result = json_stringify(r);
-  free(json_result);
+  sql_result_t *r = select_all(database, "Test3");
+  char *json = json_stringify(r);
+  printf("%s\n", json);
+  free(json);
+  //free(json_result);
   print_result(r);
   destroy_result(r);
   response->body_size =
