@@ -9,17 +9,21 @@
 #include "route.h"
 
 // COLORS :D
-#define NORMAL   "\x1B[0m"
+#define NORMAL   "\x1B[39m"
 #define RED      "\x1B[31m"
 #define GREEN    "\x1B[32m"
 #define YELLOW   "\x1B[33m"
 #define BLUE     "\x1B[34m"
+#define PORPLE   "\x1B[35m"
 #define CYAN     "\x1B[36m"
+
+void clear_response(http_response *response);
 
 http_response *create_response()
 {
   http_response *response = (http_response *)malloc(sizeof(http_response));
   response->body = NULL;
+  response->headers.headers = NULL;
   response->status_code = OK;
   return response;
 }
@@ -28,10 +32,16 @@ int send_response(
     http_response *response, const http_request *request,
     route_table *table, database_t *database)
 {
+  clear_response(response);
+
   response->socket_fd = request->socket_fd;
   FILE *socket_file = fdopen(dup(response->socket_fd), "wb");
 
   response->content_type = get_content_type(request->url);
+  response->headers.headers = malloc(sizeof(http_header));
+  response->headers.size = 0;
+  response->headers.capacity = 1;
+
   route_target target = route_url(table, request->url);
   switch (target.type) {
     case ROUTE_TARGET_NONE:
@@ -47,11 +57,17 @@ int send_response(
       fclose(target.file);
       break;
   }
+
   const char *status_message = get_status_message(response->status_code);
-  fprintf(socket_file, HTTP_FORMAT,
-    status_message,
-    response->content_type,
-    response->body_size);
+  fprintf(socket_file, "HTTP/1.1 %s\r\n", status_message);
+  fprintf(socket_file, "Content-Length: %zu\r\n", response->body_size);
+  fprintf(socket_file, "Content-Type: %s\r\n", response->content_type);
+  for (size_t i = 0; i < response->headers.size; i++) {
+    fprintf(socket_file, "%s: %s\r\n",
+        response->headers.headers[i].key,
+        response->headers.headers[i].value);
+  }
+  fprintf(socket_file, "\r\n");
   fwrite(response->body, response->body_size, 1, socket_file);
   log_response(request, response);
   fclose(socket_file);
@@ -59,11 +75,21 @@ int send_response(
   return 0;
 }
 
-void destroy_response(http_response *response)
+void clear_response(http_response *response)
 {
+  if (response->headers.headers) {
+    free(response->headers.headers);
+    response->headers.headers = NULL;
+  }
   if (response->status_code == OK && response->body) {
     free(response->body);
+    response->body = NULL;
   }
+}
+
+void destroy_response(http_response *response)
+{
+  clear_response(response);
   free(response);
 }
 
@@ -130,6 +156,6 @@ void log_error(const char *msg)
   char buffer[20];
   time_t now = time(NULL);
   struct tm *t = localtime(&now);
-  strftime(buffer, sizeof(buffer), "%Y-%m-%d %H:%M:%S", t);
+  strftime(buffer, sizeof(buffer), "%F %T", t);
   printf("[%s]" RED "ERROR: " NORMAL "%s\n", buffer, msg);
 }

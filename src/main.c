@@ -47,6 +47,11 @@ void test_handler(const http_request *request, http_response *response, database
   //free(json_result);
   print_result(r);
   destroy_result(r);
+  if (name) {
+    set_header(&response->headers, "Set-Cookie", name);
+  } else {
+    name = get_header(&request->headers, "Cookie");
+  }
   response->body_size =
     asprintf(&response->body, "<p>count=%d name=%s Host=%s</p>",
         count, name, host);
