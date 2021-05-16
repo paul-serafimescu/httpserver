@@ -48,13 +48,6 @@ database_t *create_cursor(const char *file_name);
  */
 sql_result_t *init_result();
 
-/*
- * Helper function for built-ins.
- * Populates SQL result structure with row-by-row data after executing a prepared statement.
- * Returns -1 on failure, 0 on success.
- */
-int build_result(sql_result_t *result, database_t *db, const char *query, size_t query_size);
-
 
 
 // BUILT-INS
@@ -73,9 +66,14 @@ sql_result_t *select_by_id(database_t *db, const char *table_name, const size_t 
 
 /*
  * Executes arbitrary SQL.
+ * fmt contains a sequence of characters, one for each '?' in the statement.
+ * These characters are chosen from 'dfsbn',
+ * representing an integer, real number, text, blob, or null, respectively.
+ * TEXT inserts must be followed by a string length. If unknown, pass 0.
  * Returns populated SQL result structure on success, NULL on failure.
  */
-sql_result_t *exec_sql(database_t *db, const char *stmnt, size_t stmnt_size);
+sql_result_t *exec_sql(database_t *db, const char *stmnt, size_t stmnt_size,
+    const char *fmt, ...);
 
 /*
  * Executes query on PRAGMA to get table columns and types.
@@ -85,10 +83,13 @@ sql_result_t *get_column_names(database_t *db, const char *table_name);
 
 /*
  * Inserts values into table.
+ * fmt contains a sequence of characters, one for each column in the table.
+ * These characters are chosen from 'dfsbn',
+ * representing an integer, real number, text, blob, or null, respectively.
  * TEXT inserts must be followed by a string length. If unknown, pass 0.
  * Returns -1 on failure, last added row primary key on success.
  */
-int insert_into_table(database_t *db, const char *table_name, ...);
+int insert_into_table(database_t *db, const char *table_name, const char *fmt, ...);
 
 /*
  * Deletes row specified by 'id'.

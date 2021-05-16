@@ -40,13 +40,14 @@ void test_handler(const http_request *request, http_response *response, database
   static int count = 0;
   char *name = get_request_qfield(request, "name");
   char *host = get_header(&request->headers, "host");
+  int x = insert_into_table(database, "Test3", "sd", "mary", 0, 300 + count);
   sql_result_t *r = select_all(database, "Test3");
   char *json = json_stringify(r);
   printf("%s\n", json);
   free(json);
-  //free(json_result);
   print_result(r);
   destroy_result(r);
+  delete_by_id(database, "Test3", x);
   if (name) {
     set_header(&response->headers, "Set-Cookie", name);
   } else {
