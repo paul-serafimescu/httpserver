@@ -9,10 +9,10 @@ CFLAGS = -g -pthread -Wall -Wextra
 default: server
 
 server: $(OBJECTS)
-	gcc $(CFLAGS) $^ -o $@ -lsqlite3
+	gcc $(CFLAGS) $^ -o $@ -lsqlite3 -ljson-c
 
 $(OBJECT_DIR)/%.o : $(SOURCE_DIR)/%.c | $(OBJECT_DIR)
-	gcc $(CFLAGS) -Iinclude -c $< -o $@
+	gcc $(CFLAGS) -Iinclude -I/usr/include/json-c -c $< -o $@
 
 $(OBJECT_DIR) :
 	mkdir -p $@
