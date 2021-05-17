@@ -1,10 +1,11 @@
 #define _GNU_SOURCE
+#include <json_object.h>
+
 #include "server.h"
 #include "request.h"
 #include "response.h"
 #include "route.h"
 #include "database.h"
-#include "json.h"
 
 #define PORT 8000
 #define MAX_CONNECTIONS 10

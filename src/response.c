@@ -33,9 +33,7 @@ int send_response(
     route_table *table, database_t *database)
 {
   clear_response(response);
-
-  response->socket_fd = request->socket_fd;
-  FILE *socket_file = fdopen(dup(response->socket_fd), "wb");
+  response->socket_file = request->socket_file;
 
   response->content_type = get_content_type(request->url);
   response->headers.headers = malloc(sizeof(http_header));
@@ -59,18 +57,17 @@ int send_response(
   }
 
   const char *status_message = get_status_message(response->status_code);
-  fprintf(socket_file, "HTTP/1.1 %s\r\n", status_message);
-  fprintf(socket_file, "Content-Length: %zu\r\n", response->body_size);
-  fprintf(socket_file, "Content-Type: %s\r\n", response->content_type);
+  fprintf(response->socket_file, "HTTP/1.1 %s\r\n", status_message);
+  fprintf(response->socket_file, "Content-Length: %zu\r\n", response->body_size);
+  fprintf(response->socket_file, "Content-Type: %s\r\n", response->content_type);
   for (size_t i = 0; i < response->headers.size; i++) {
-    fprintf(socket_file, "%s: %s\r\n",
+    fprintf(response->socket_file, "%s: %s\r\n",
         response->headers.headers[i].key,
         response->headers.headers[i].value);
   }
-  fprintf(socket_file, "\r\n");
-  fwrite(response->body, response->body_size, 1, socket_file);
+  fprintf(response->socket_file, "\r\n");
+  fwrite(response->body, response->body_size, 1, response->socket_file);
   log_response(request, response);
-  fclose(socket_file);
 
   return 0;
 }

@@ -22,7 +22,7 @@ typedef struct {
 } request_qfield;
 
 typedef struct http_request {
-  int socket_fd;
+  FILE *socket_file;
   request_method method;
   char *urlfull;
   char *url;
@@ -34,7 +34,7 @@ typedef struct http_request {
 } http_request;
 
 http_request *create_request();
-int parse_request(int socket_fd, http_request *request);
+int parse_request(FILE *socket_file, http_request *request);
 char *get_request_qfield(const http_request *request, char *key);
 void destroy_request(http_request *request);
 

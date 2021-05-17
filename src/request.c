@@ -19,21 +19,13 @@ http_request *create_request()
   return request;
 }
 
-int parse_request(int socket_fd, http_request *request)
+int parse_request(FILE *socket_file, http_request *request)
 {
   clear_request(request);
-
-  request->socket_fd = socket_fd;
-
-  FILE *socket_file = fdopen(dup(request->socket_fd), "rb");
-  if (socket_file == NULL) {
-    perror("fdopen");
-    return -1;
-  }
+  request->socket_file = socket_file;
 
   char method_str[10];
   if (fscanf(socket_file, "%9s %ms HTTP/1.1\r\n", method_str, &request->urlfull) != 2) {
-    fclose(socket_file);
     return -1;
   }
 
@@ -45,7 +37,6 @@ int parse_request(int socket_fd, http_request *request)
     }
   }
   if (request->method == (request_method)-1) {
-    fclose(socket_file);
     return -1;
   }
 
@@ -108,7 +99,6 @@ int parse_request(int socket_fd, http_request *request)
     }
   }
 
-  fclose(socket_file);
   return 0;
 }
 

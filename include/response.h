@@ -12,7 +12,7 @@ typedef struct {
 } response_header;
 
 typedef struct http_response {
-  int socket_fd;
+  FILE *socket_file;
   enum {
     OK = 200,
     NOT_FOUND = 404,

@@ -41,6 +41,7 @@ void *handle_request(void *input)
   http_request *request = create_request();
   http_response *response = create_response();
   int socket;
+  FILE *socket_file;
   int running = 1;
   while (running) {
     pthread_mutex_lock(&queue_mutex);
@@ -54,10 +55,14 @@ void *handle_request(void *input)
       running = 0;
     } else {
       pthread_mutex_unlock(&queue_mutex);
-      if (parse_request(socket, request) == 0) {
+      socket_file = fdopen(socket, "r+b");
+      if (socket_file == NULL) {
+        perror("fdopen");
+      }
+      if (parse_request(socket_file, request) == 0) {
         send_response(response, request, server->table, server->database);
       }
-      close(socket);
+      fclose(socket_file);
     }
   }
   destroy_response(response);
