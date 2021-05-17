@@ -4,6 +4,8 @@
 #include <sqlite3.h>
 #include <string.h>
 #include <stdarg.h>
+#include <json_object.h>
+
 #include "database.h"
 
 #define PRINT_ERR(error_msg) { fprintf(stderr, "[SQL error] %s\n", error_msg); }
