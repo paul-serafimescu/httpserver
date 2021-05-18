@@ -72,9 +72,19 @@ int insert_into_table(database_t *db, const char *table_name, const char *fmt, .
 int delete_by_id(database_t *db, const char *table_name, const size_t id);
 
 /*
- * Has not been implemented yet.
+ * Updates row specified by 'id' with the specified transformation.
+ * The 'changes' field specifies how to update the row,
+ * as in the "SET" clause in the update command.
+ * fmt contains a sequence of characters, one for each question mark
+ * in the 'changes' field.
+ * These characters are chosen from 'dfsbn',
+ * representing an integer, real number, text, blob, or null, respectively.
+ * TEXT inserts must be followed by a string length. If unknown, pass 0.
+ * Returns -1 on failure, 0 on success.
  */
-int update_by_id(database_t *db, const char *table_name, const size_t id);
+int update_by_id(database_t *db, const char *table_name, const size_t id,
+    const char *changes,
+    const char *fmt, ...);
 
 
 

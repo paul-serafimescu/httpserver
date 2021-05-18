@@ -42,8 +42,9 @@ void test_handler(const http_request *request, http_response *response, database
   char *name = get_request_qfield(request, "name");
   char *host = get_header(&request->headers, "host");
   int x = insert_into_table(database, "Test3", "sd", "mary", 0, 300 + count);
+  update_by_id(database, "Test3", 1, "age = age + ?", "d", 300);
   json_t r = select_all(database, "Test3");
-  printf("%s\n", json_object_to_json_string(r));
+  printf("%s\n", json_object_to_json_string_ext(r, JSON_C_TO_STRING_PLAIN));
   json_object_put(r);
   delete_by_id(database, "Test3", x);
   if (name) {

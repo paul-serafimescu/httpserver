@@ -13,7 +13,7 @@
 int build_result(json_t *result, database_t *db,
     const char *query, size_t query_size,
     const char *fmt, va_list args);
-static int vprepare(database_t *db, const char *query, size_t query_size,
+static int vprepare(database_t *db, const char *query, int query_size,
     const char *fmt, va_list args);
 
 database_t *create_cursor(const char *file_name)
@@ -87,6 +87,7 @@ int insert_into_table(database_t *db, const char *table_name, const char *fmt, .
   int rc = vprepare(db, query, table_length + num_columns * 2 + 22, fmt, args);
   if (rc != SQLITE_OK) {
     db->error_message = (char *)sqlite3_errmsg(db->db);
+    PRINT_ERR(db->error_message);
     return -1;
   }
   va_end(args);
@@ -106,7 +107,7 @@ int insert_into_table(database_t *db, const char *table_name, const char *fmt, .
 int delete_by_id(database_t *db, const char *table_name, const size_t id)
 {
   char *query;
-  signed char return_value = 0;
+  int return_value = 0;
   asprintf(&query, "DELETE FROM %s WHERE rowid = %zu", table_name, id);
   if (sqlite3_exec(db->db, query, 0, 0, &db->error_message)) {
     PRINT_ERR(db->error_message);
@@ -116,11 +117,30 @@ int delete_by_id(database_t *db, const char *table_name, const size_t id)
   return return_value;
 }
 
-/* int update_by_id(database_t *db, const char *table_name, const size_t id)
+int update_by_id(database_t *db, const char *table_name, const size_t id, const char *changes, const char *fmt, ...)
 {
   char *query;
-  asprintf(&query, "UPDATE %s SET nyaa~ WHERE rowid = %zu", table_name, id);
-} */
+  asprintf(&query, "UPDATE %s SET %s WHERE rowid = %zu", table_name, changes, id);
+  va_list args;
+  va_start(args, fmt);
+  int rc = vprepare(db, query, -1, fmt, args);
+  if (rc != SQLITE_OK) {
+    db->error_message = (char *)sqlite3_errmsg(db->db);
+    PRINT_ERR(db->error_message);
+    return -1;
+  }
+  va_end(args);
+  free(query);
+
+  if (sqlite3_step(db->prepared_statement) != SQLITE_DONE) {
+    db->error_message = (char *)sqlite3_errmsg(db->db);
+    PRINT_ERR(db->error_message);
+    sqlite3_finalize(db->prepared_statement);
+    return -1;
+  }
+  sqlite3_finalize(db->prepared_statement);
+  return 0;
+}
 
 void destroy_cursor(database_t *db)
 {
@@ -186,7 +206,7 @@ int build_result(json_t *result, database_t *db,
   return 0;
 }
 
-int vprepare(database_t *db, const char *query, size_t query_size,
+int vprepare(database_t *db, const char *query, int query_size,
     const char *fmt, va_list args)
 {
   int rc = sqlite3_prepare_v2(db->db, query, query_size, &db->prepared_statement, NULL);
