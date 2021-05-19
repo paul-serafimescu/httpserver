@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <regex.h>
+#include <stdbool.h>
 #include <json-c/json_object.h>
 
 #include "response.h"
@@ -11,6 +12,7 @@
 
 static void resize_table(route_table *table);
 static char **tokenize_url(char *src, const char *delim, size_t *size);
+static bool match(char **url_p, const size_t num_params, const char *url, char ***url_split, size_t *size);
 
 route_table *create_route_table(size_t initial_size)
 {
@@ -34,17 +36,48 @@ static void resize_table(route_table *table)
 
 static char **tokenize_url(char *src, const char *delim, size_t *size)
 {
-  char *token, **params = malloc(MAX_PARAMS * sizeof(char *));
-  src = strdup(src);
+  char *token, **params = malloc(MAX_PARAMS * sizeof(char *)), *ptr;
+  if (src[0] == '/') {
+    ptr = src + 1;
+  } else {
+    ptr = src;
+  }
+  src = strdup(ptr);
   for (*size = 0; (token = strsep(&src, delim));) {
-    if (token[0] != '{') continue;
-    size_t token_len = strlen(token);
-    if (token_len < 3) continue;
-    // (token++)[token_len - 1] = '\0';
+    if (*size + 1 == MAX_PARAMS) break;
     params[(*size)++] = token;
   }
   free(src);
   return params;
+}
+
+static bool match(char **url_p, const size_t num_params, const char *url, char ***url_split, size_t *size)
+{
+  char *u = strdup(url);
+  (*url_split) = tokenize_url(u, "/", size);
+  free(u);
+  if (*size != num_params)
+    return false;
+  for (size_t i = 0; i < num_params; i++) {
+    if (url_p[i][0] != '{') { // normal url component
+      if (strcmp(url_p[i], (*url_split)[i]))
+        return false; // not the same
+    } else { // parametrized url component
+      char type = strchr(url_p[i], ':')[1];
+      switch (type) {
+        case 'd':
+          if (!atoi((*url_split)[i])) {
+            return false;
+          }
+          break;
+        case 's':
+          break;
+        default:
+          return false;
+      }
+    }
+  }
+  return true;
 }
 
 void add_file_route(route_table *table, char *url, char *file_name)
@@ -107,13 +140,16 @@ route_target route_url(route_table *table, const char *url)
           return target;
         }
         break;
-      case ROUTE_TYPE_HANDLER:
-        if (!strcmp(table->routes[i].url, url)) {
+      case ROUTE_TYPE_HANDLER:;
+        char **split_url;
+        size_t size;
+        if (match(table->routes[i].params, table->routes[i].num_params, url, &split_url, &size)) {
           target.type = ROUTE_TARGET_HANDLER;
           target.handler = table->routes[i].handler;
           char **p = table->routes[i].params;
           size_t num_params = table->routes[i].num_params;
           for (size_t j = 0; j < num_params; j++) {
+            if (p[j][0] != '{') continue;
             char *tmp = strchr(p[j], ':');
             if (tmp == NULL) {
               // handle this user error
@@ -121,23 +157,30 @@ route_target route_url(route_table *table, const char *url)
             char type = (tmp + 1)[0];
             json_t entry = NULL;
             switch (type) {
-              case 'd':
-                entry = json_object_new_int64(10);
+              case 'd':;
+                long val = atol(split_url[j]);
+                entry = json_object_new_int64(val);
                 break;
               case 's':
-                entry = json_object_new_string("test");
+                entry = json_object_new_string(split_url[j]);
                 break;
               default:
                 // no clue what else there is
                 break;
             }
-            (p[j]++)[strlen(p[j]) - 2] = '\0'; // nothing wrong with this
-            json_object_object_add(params, p[j], entry);
+            size_t i, value_length = strlen(p[j]) + 1;
+            char *value = malloc(value_length);
+            for (i = 1; p[j][i] != ':'; i++) {
+              value[i - 1] = p[j][i];
+            }
+            value[i] = '\0';
+            json_object_object_add(params, value, entry);
+            free(value);
           }
-          // printf("%s\n", json_object_to_json_string_ext(params, JSON_C_TO_STRING_PLAIN));
           target.params = params;
           return target;
         }
+        free(split_url);
         break;
       case ROUTE_TYPE_DIR:
         ;
@@ -165,9 +208,6 @@ route_target route_url(route_table *table, const char *url)
 void destroy_route_table(route_table *table)
 {
   for (size_t i = 0; i < table->size; i++) {
-    for (size_t j = 0; j < table->routes[i].num_params; j++) {
-      free(table->routes[i].params[i]);
-    }
     free(table->routes[i].params);
   }
   free(table->routes);
