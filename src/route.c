@@ -44,18 +44,15 @@ static char **tokenize_url(char *src, const char *delim, size_t *size)
   }
   src = strdup(ptr);
   for (*size = 0; (token = strsep(&src, delim));) {
-    if (*size + 1 == MAX_PARAMS) break;
+    if (*size == MAX_PARAMS) break;
     params[(*size)++] = token;
   }
-  free(src);
   return params;
 }
 
 static bool match(char **url_p, const size_t num_params, const char *url, char ***url_split, size_t *size)
 {
-  char *u = strdup(url);
-  (*url_split) = tokenize_url(u, "/", size);
-  free(u);
+  (*url_split) = tokenize_url(url, "/", size);
   if (*size != num_params)
     return false;
   for (size_t i = 0; i < num_params; i++) {
@@ -111,8 +108,6 @@ void add_handler_route(route_table *table, char *url, http_handler handler)
 
   size_t num_params;
 
-  table->routes[table->size].url = "/handle"; // obviously this needs to be fixed up too (previously url)
-  table->routes[table->size].urllen = strlen(url);
   table->routes[table->size].type = ROUTE_TYPE_HANDLER;
   table->routes[table->size].handler = handler;
   table->routes[table->size].params = tokenize_url(url, "/", &num_params);
@@ -137,6 +132,7 @@ route_target route_url(route_table *table, const char *url)
           sprintf(path, "wwwroot/%s", table->routes[i].path);
           target.file = fopen(path, "rb");
           target.type = target.file ? ROUTE_TARGET_FILE : ROUTE_TARGET_NONE;
+          json_object_put(params);
           return target;
         }
         break;
@@ -173,13 +169,16 @@ route_target route_url(route_table *table, const char *url)
             for (i = 1; p[j][i] != ':'; i++) {
               value[i - 1] = p[j][i];
             }
-            value[i] = '\0';
+            value[i - 1] = '\0';
             json_object_object_add(params, value, entry);
             free(value);
           }
           target.params = params;
+          free(split_url[0]);
+          free(split_url);
           return target;
         }
+        free(split_url[0]);
         free(split_url);
         break;
       case ROUTE_TYPE_DIR:
@@ -199,8 +198,10 @@ route_target route_url(route_table *table, const char *url)
     sprintf(path, "wwwroot/%s/%s", route->path, url + route->urllen);
     target.file = fopen(path, "rb");
     target.type = target.file ? ROUTE_TARGET_FILE : ROUTE_TARGET_NONE;
+    json_object_put(params);
     return target;
   }
+  json_object_put(params);
   target.type = ROUTE_TARGET_NONE;
   return target;
 }
@@ -208,7 +209,10 @@ route_target route_url(route_table *table, const char *url)
 void destroy_route_table(route_table *table)
 {
   for (size_t i = 0; i < table->size; i++) {
-    free(table->routes[i].params);
+    if (table->routes[i].type == ROUTE_TYPE_HANDLER) {
+      free(table->routes[i].params[0]);
+      free(table->routes[i].params);
+    }
   }
   free(table->routes);
   free(table);

@@ -20,16 +20,18 @@ typedef enum {
 
 typedef struct {
   route_type type;
-  char *url;
-  size_t urllen;
-  char **params;
-  size_t num_params;
   union {
     struct {
+      char *url;
+      size_t urllen;
       char *path;
       size_t pathlen;
     };
-    http_handler handler;
+    struct {
+      char **params;
+      size_t num_params;
+      http_handler handler;
+    };
   };
 } route_entry;
 
