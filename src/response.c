@@ -48,7 +48,8 @@ int send_response(
       response->status_code = NOT_FOUND;
       break;
     case ROUTE_TARGET_HANDLER:
-      target.handler(request, response, database);
+      target.handler(request, response, database, target.params);
+      json_object_put(target.params);
       break;
     case ROUTE_TARGET_FILE:
       serve_static(target.file, response);

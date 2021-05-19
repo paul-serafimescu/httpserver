@@ -3,13 +3,14 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <json-c/json_object.h>
 #include "database.h"
 
 // I'm sorry
 typedef struct http_request http_request;
 typedef struct http_response http_response;
 typedef void (*http_handler)(
-    const http_request *request, http_response *response, database_t *database);
+    const http_request *request, http_response *response, database_t *database, json_t params);
 
 typedef enum {
   ROUTE_TYPE_FILE,
@@ -21,6 +22,8 @@ typedef struct {
   route_type type;
   char *url;
   size_t urllen;
+  char **params;
+  size_t num_params;
   union {
     struct {
       char *path;
@@ -46,7 +49,10 @@ typedef struct {
   route_target_type type;
   union {
     FILE *file;
-    http_handler handler;
+    struct {
+      http_handler handler;
+      json_t params;
+    };
   };
 } route_target;
 

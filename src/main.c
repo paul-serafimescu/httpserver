@@ -1,5 +1,5 @@
 #define _GNU_SOURCE
-#include <json_object.h>
+#include <json-c/json_object.h>
 
 #include "server.h"
 #include "request.h"
@@ -10,7 +10,7 @@
 #define PORT 8000
 #define MAX_CONNECTIONS 10
 
-void test_handler(const http_request *request, http_response *response, database_t *database);
+void test_handler(const http_request *request, http_response *response, database_t *database, json_t params);
 
 int main(int argc, char **argv) {
   (void)argc;
@@ -22,7 +22,7 @@ int main(int argc, char **argv) {
   add_file_route(table, "/", "index.html");
   add_file_route(table, "/routed", "index.html");
   add_file_route(table, "/routed/", "index.html");
-  add_handler_route(table, "/handle", test_handler);
+  add_handler_route(table, "/handle/{testing:s}/{id:d}", test_handler);
 
   database_t *database = create_cursor("db.sqlite3");
 
@@ -36,15 +36,16 @@ int main(int argc, char **argv) {
   return 0;
 }
 
-void test_handler(const http_request *request, http_response *response, database_t *database)
+void test_handler(const http_request *request, http_response *response, database_t *database, json_t params)
 {
   static int count = 0;
+  printf("%s\n", json_object_to_json_string_ext(params, JSON_C_TO_STRING_PLAIN));
   char *name = get_request_qfield(request, "name");
   char *host = get_header(&request->headers, "host");
   int x = insert_into_table(database, "Test3", "sd", "mary", 0, 300 + count);
   update_by_id(database, "Test3", 1, "age = age + ?", "d", 300);
   json_t r = select_all(database, "Test3");
-  printf("%s\n", json_object_to_json_string_ext(r, JSON_C_TO_STRING_PLAIN));
+  // printf("%s\n", json_object_to_json_string_ext(r, JSON_C_TO_STRING_PLAIN));
   json_object_put(r);
   delete_by_id(database, "Test3", x);
   if (name) {

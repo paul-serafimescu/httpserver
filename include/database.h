@@ -2,7 +2,7 @@
 #define DATABASE_H
 
 #include <sqlite3.h>
-#include <json_object.h>
+#include <json-c/json_object.h>
 
 typedef struct {
   sqlite3 *db;

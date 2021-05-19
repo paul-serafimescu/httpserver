@@ -1,11 +1,16 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <regex.h>
+#include <json-c/json_object.h>
 
 #include "response.h"
 #include "route.h"
 
+#define MAX_PARAMS 16
+
 static void resize_table(route_table *table);
+static char **tokenize_url(char *src, const char *delim, size_t *size);
 
 route_table *create_route_table(size_t initial_size)
 {
@@ -25,6 +30,21 @@ static void resize_table(route_table *table)
     table->routes = realloc(table->routes,
         sizeof(route_entry) * table->capacity);
   }
+}
+
+static char **tokenize_url(char *src, const char *delim, size_t *size)
+{
+  char *token, **params = malloc(MAX_PARAMS * sizeof(char *));
+  src = strdup(src);
+  for (*size = 0; (token = strsep(&src, delim));) {
+    if (token[0] != '{') continue;
+    size_t token_len = strlen(token);
+    if (token_len < 3) continue;
+    // (token++)[token_len - 1] = '\0';
+    params[(*size)++] = token;
+  }
+  free(src);
+  return params;
 }
 
 void add_file_route(route_table *table, char *url, char *file_name)
@@ -56,10 +76,14 @@ void add_handler_route(route_table *table, char *url, http_handler handler)
 {
   resize_table(table);
 
-  table->routes[table->size].url = url;
+  size_t num_params;
+
+  table->routes[table->size].url = "/handle"; // obviously this needs to be fixed up too (previously url)
   table->routes[table->size].urllen = strlen(url);
   table->routes[table->size].type = ROUTE_TYPE_HANDLER;
   table->routes[table->size].handler = handler;
+  table->routes[table->size].params = tokenize_url(url, "/", &num_params);
+  table->routes[table->size].num_params = num_params;
 
   table->size++;
 }
@@ -70,6 +94,7 @@ route_target route_url(route_table *table, const char *url)
   size_t longest_match;
   size_t longest_prefix = 0;
   route_target target;
+  json_t params = json_object_new_object();
 
   for (unsigned i = 0; i < table->size; i++) {
     switch (table->routes[i].type) {
@@ -86,6 +111,31 @@ route_target route_url(route_table *table, const char *url)
         if (!strcmp(table->routes[i].url, url)) {
           target.type = ROUTE_TARGET_HANDLER;
           target.handler = table->routes[i].handler;
+          char **p = table->routes[i].params;
+          size_t num_params = table->routes[i].num_params;
+          for (size_t j = 0; j < num_params; j++) {
+            char *tmp = strchr(p[j], ':');
+            if (tmp == NULL) {
+              // handle this user error
+            }
+            char type = (tmp + 1)[0];
+            json_t entry = NULL;
+            switch (type) {
+              case 'd':
+                entry = json_object_new_int64(10);
+                break;
+              case 's':
+                entry = json_object_new_string("test");
+                break;
+              default:
+                // no clue what else there is
+                break;
+            }
+            (p[j]++)[strlen(p[j]) - 2] = '\0'; // nothing wrong with this
+            json_object_object_add(params, p[j], entry);
+          }
+          // printf("%s\n", json_object_to_json_string_ext(params, JSON_C_TO_STRING_PLAIN));
+          target.params = params;
           return target;
         }
         break;
@@ -114,6 +164,12 @@ route_target route_url(route_table *table, const char *url)
 
 void destroy_route_table(route_table *table)
 {
+  for (size_t i = 0; i < table->size; i++) {
+    for (size_t j = 0; j < table->routes[i].num_params; j++) {
+      free(table->routes[i].params[i]);
+    }
+    free(table->routes[i].params);
+  }
   free(table->routes);
   free(table);
 }

@@ -4,7 +4,7 @@
 #include <sqlite3.h>
 #include <string.h>
 #include <stdarg.h>
-#include <json_object.h>
+#include <json-c/json_object.h>
 
 #include "database.h"
 
@@ -132,14 +132,14 @@ int update_by_id(database_t *db, const char *table_name, const size_t id, const 
   va_end(args);
   free(query);
 
+  signed char retval = 0;
   if (sqlite3_step(db->prepared_statement) != SQLITE_DONE) {
     db->error_message = (char *)sqlite3_errmsg(db->db);
     PRINT_ERR(db->error_message);
-    sqlite3_finalize(db->prepared_statement);
-    return -1;
+    retval = -1;
   }
   sqlite3_finalize(db->prepared_statement);
-  return 0;
+  return retval;
 }
 
 void destroy_cursor(database_t *db)
