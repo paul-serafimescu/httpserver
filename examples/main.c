@@ -1,5 +1,6 @@
 #define _GNU_SOURCE
 #include <json-c/json_object.h>
+#include <json-c/json_tokener.h>
 
 #include "server.h"
 #include "request.h"
@@ -10,19 +11,16 @@
 #define PORT 8000
 #define MAX_CONNECTIONS 10
 
-void test_handler(const http_request *request, http_response *response, database_t *database, json_t params);
+void example_handler(const http_request *request, http_response *response, database_t *database, json_t params);
 
 int main(int argc, char **argv) {
   (void)argc;
   (void)argv;
 
   route_table *table = create_route_table(0);
-  add_dir_route(table, "/", ".");
-  add_dir_route(table, "/routed/", ".");
-  add_file_route(table, "/", "index.html");
-  add_file_route(table, "/routed", "index.html");
-  add_file_route(table, "/routed/", "index.html");
-  add_handler_route(table, "/handle/{controller:s}/{index:s}/{id:d}", test_handler);
+  add_dir_route(table, "/", "example-frontend/build");
+  add_file_route(table, "/", "example-frontend/build/index.html");
+  add_handler_route(table, "/users", example_handler);
 
   database_t *database = create_cursor("db.sqlite3");
 
@@ -36,25 +34,34 @@ int main(int argc, char **argv) {
   return 0;
 }
 
-void test_handler(const http_request *request, http_response *response, database_t *database, json_t params)
+void example_handler(const http_request *request, http_response *response, database_t *database, json_t params)
 {
-  static int count = 0;
-  printf("%s\n", json_object_to_json_string_ext(params, JSON_C_TO_STRING_PLAIN));
-  char *name = get_request_qfield(request, "name");
-  char *host = get_header(&request->headers, "host");
-  int x = insert_into_table(database, "Test3", "sd", "mary", 0, 300 + count);
-  update_by_id(database, "Test3", 1, "age = age + ?", "d", 300);
-  json_t r = select_all(database, "Test3");
-  json_object_put(r);
-  delete_by_id(database, "Test3", x);
-  if (name) {
-    set_header(&response->headers, "Set-Cookie", name);
-  } else {
-    name = get_header(&request->headers, "Cookie");
+  switch (request->method) {
+    case REQUEST_GET:;
+      json_t users = select_all(database, "Users");
+      response->body_size = asprintf(&response->body, "%s", json_object_to_json_string_ext(users, JSON_C_TO_STRING_PLAIN));
+      response->status_code = OK;
+      response->content_type = "application/json";
+      json_object_put(users);
+      break;
+    case REQUEST_POST:
+      if (request->body == NULL) {
+        response->body_size = asprintf(&response->body, "<p>invalid request</p>");
+        response->status_code = BAD_REQUEST;
+        return;
+      }
+      json_t body = json_tokener_parse(request->body);
+      int rv = insert_into_table(database, "Users", "sss",
+        json_object_get_string(json_object_object_get(body, "name")), 0,
+        json_object_get_string(json_object_object_get(body, "password")), 0,
+        json_object_get_string(json_object_object_get(body, "email")), 0
+      );
+      if (rv > 0) {
+        response->body_size = asprintf(&response->body, "{\"id\":%d}", rv);
+        response->status_code = OK;
+        return;
+      }
+      response->status_code = BAD_REQUEST;
+      break;
   }
-  response->body_size =
-    asprintf(&response->body, "<p>count=%d name=%s Host=%s</p>",
-        count, name, host);
-  response->status_code = OK;
-  count++;
 }

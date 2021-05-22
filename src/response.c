@@ -115,6 +115,8 @@ char *get_content_type(const char *url)
       return "text/css";
     if (strcmp(url, ".json") == 0)
       return "application/json";
+    if (strcmp(url, ".svg") == 0)
+      return "image/svg+xml";
   }
   return "";
 }
