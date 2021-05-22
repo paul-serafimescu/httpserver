@@ -46,9 +46,9 @@ export function Form(props) {
   return (
     <div className="form-container">
       <form onSubmit={handleSubmit}>
-        <input type="text" value={state.name} name="name" placeholder="Name" autoComplete="username" onChange={handleChange} />
-        <input type="password" value={state.password} name="password" placeholder="Password" autoComplete="current-password" onChange={handleChange} />
-        <input type="email" value={state.email} name="email" placeholder="Email" autoComplete="current-email" onChange={handleChange} />
+        <input required type="text" value={state.name} name="name" placeholder="Name" autoComplete="username" onChange={handleChange} />
+        <input required type="password" value={state.password} name="password" placeholder="Password" autoComplete="current-password" onChange={handleChange} />
+        <input required type="email" value={state.email} name="email" placeholder="Email" autoComplete="current-email" onChange={handleChange} />
         <input type="submit" value="Hand Over Info" />
         {state.submitted && <p style={{color: 'red'}}>Successfully handed over your information!</p>}
       </form>
