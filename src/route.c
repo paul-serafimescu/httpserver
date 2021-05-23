@@ -11,7 +11,7 @@
 #define MAX_PARAMS 16
 
 static void resize_table(route_table *table);
-static char **tokenize_url(char *src, const char *delim, size_t *size);
+static char **tokenize_url(const char *src, const char *delim, size_t *size);
 static bool match(char **url_p, const size_t num_params, const char *url, char ***url_split, size_t *size);
 
 route_table *create_route_table(size_t initial_size)
@@ -34,18 +34,17 @@ static void resize_table(route_table *table)
   }
 }
 
-static char **tokenize_url(char *src, const char *delim, size_t *size)
+static char **tokenize_url(const char *src, const char *delim, size_t *size)
 {
   char *token, **params = malloc(MAX_PARAMS * sizeof(char *)), *ptr;
   if (src[0] == '/') {
-    ptr = src + 1;
+    ptr = strdup(src + 1);
   } else {
-    ptr = src;
+    ptr = strdup(src);
   }
-  src = strdup(ptr);
-  for (*size = 0; (token = strsep(&src, delim));) {
+  for (*size = 0; (token = strsep(&ptr, delim)); (*size)++) {
     if (*size == MAX_PARAMS) break;
-    params[(*size)++] = token;
+    params[*size] = token;
   }
   return params;
 }
@@ -186,17 +185,30 @@ route_target route_url(route_table *table, const char *url)
         size_t prefixlen = table->routes[i].urllen;
         if (prefixlen > longest_prefix &&
             !strncmp(table->routes[i].url, url, prefixlen)) {
-          longest_match = i;
-          longest_prefix = prefixlen;
+          // just go with it
+          if (url[prefixlen-1] == '/' || url[prefixlen] == '\0') {
+            longest_match = i;
+            longest_prefix = prefixlen;
+          } else if (url[prefixlen] == '/') {
+            longest_match = i;
+            longest_prefix = prefixlen + 1;
+          }
         }
         break;
     }
   }
   if (longest_prefix > 0) {
     route_entry *route = table->routes + longest_match;
-    char path[urllen - route->urllen + route->pathlen + 10];
-    sprintf(path, "wwwroot/%s/%s", route->path, url + route->urllen);
+    char *path;
+    if (urllen - route->urllen <= 1) {
+      path = malloc(route->pathlen + 21);
+      sprintf(path, "wwwroot/%s/index.html", route->path);
+    } else {
+      path = malloc(urllen - longest_prefix + route->pathlen + 10);
+      sprintf(path, "wwwroot/%s/%s", route->path, url + longest_prefix);
+    }
     target.file = fopen(path, "rb");
+    free(path);
     target.type = target.file ? ROUTE_TARGET_FILE : ROUTE_TARGET_NONE;
     json_object_put(params);
     return target;
