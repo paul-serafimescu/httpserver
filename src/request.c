@@ -94,8 +94,9 @@ int parse_request(FILE *socket_file, http_request *request)
     char *content_length = get_header(&request->headers, "content-length");
     if (content_length) {
       request->body_size = atoi(content_length);
-      request->body = malloc(request->body_size);
+      request->body = malloc(request->body_size + 1);
       fread(request->body, 1, request->body_size, socket_file);
+      request->body[request->body_size] = 0;
     }
   }
 

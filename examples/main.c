@@ -19,7 +19,6 @@ int main(int argc, char **argv) {
 
   route_table *table = create_route_table(0);
   add_dir_route(table, "/", "example-frontend/build");
-  add_file_route(table, "/", "example-frontend/build/index.html");
   add_handler_route(table, "/users", example_handler);
 
   database_t *database = create_cursor("db.sqlite3");
@@ -56,6 +55,7 @@ void example_handler(const http_request *request, http_response *response, datab
         json_object_get_string(json_object_object_get(body, "password")), 0,
         json_object_get_string(json_object_object_get(body, "email")), 0
       );
+      json_object_put(body);
       if (rv > 0) {
         response->body_size = asprintf(&response->body, "{\"id\":%d}", rv);
         response->status_code = OK;
